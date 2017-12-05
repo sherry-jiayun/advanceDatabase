@@ -59,8 +59,27 @@ class VariableInCommand(object):
 class Lock(object):
 	def __init__(self, locktype, transactionNum):
 		self.locktype = locktype # read lock, write lock
-		self.status = -1 # -1 for initialize, 0 for get and 1 for wait
+		self.status = project.LOCK_STATUS_INITIALIZE # -1 for initialize, 0 for get and 1 for wait
 		sefl.transactionNum = transactionNum # may drop transactionList in DM
+	def lockGranted(self, currentLockList):
+		granted = True
+		if self.locktype == project.LOCK_TYPE_WRITE:
+			for l in currentLockList:
+				# 如果有同一个transaction两次试图writelock同一个variable?
+				# 如果当前时一个写lock, 拒绝所有不是自己的lock
+				if l.transactionNum != self.transactionNum:
+					granted = False
+					break 
+		if self.locktype == project.LOCK_TYPE_READ:
+			for l in currentLockList:
+				# 如果前面有读操作的话，读的是以前的还是改过的呢？
+				# 如果当前是一个读lock,前面不能有任何不是自己的写lock
+				if l.locktype == project.LOCK_TYPE_WRITE and l.transactionNum != self.transactionNum:
+					# 前面有写操作，并且不是同一个transaction，拒绝
+					granted = False
+					break
+		return granted
+
 
 class Transaction(object):
 	def __init__(self, index, transactionNum, readOnly,currentVariableValue = {}):
@@ -69,7 +88,7 @@ class Transaction(object):
 		self.readOnly = readOnly # true or false
 		self.commandlist = [] # store all command
 		self.status = -1 # -1 for initialize, 0 for success, 1 for wait, 2 for fail
-		# self.currentVariableValue = currentVariableValue # for readOnly
+		self.currentVariableValue = currentVariableValue # for readOnly
 
 
 class Command(object):
@@ -81,7 +100,7 @@ class Command(object):
 		else:
 			self.variable = VariableInCommand(variableNum,1,value)
 		self.value = value # none for read
-		self.status = -1 # -1 for initialize, 0 for success, 1 for wait, 2 for fail 
+		self.status = project.COMMAND_STATUS_INITIALIZE # -1 for initialize, 0 for success, 1 for wait, 2 for fail 
 
 class TransactionMachine(object):
 	def __init__(self):
@@ -127,7 +146,7 @@ class TransactionMachine(object):
 		# create command object
 		# check if variable legal, if not change transaction's status to fail directly
 		# get site list
-		# 
+		commandTmp = Command()
 		return
 
 	def end(self,transactionNum):
@@ -186,14 +205,50 @@ class DataManager(object):
 			for v in self.variables[vl]:
 				v.getInfo()
 
-	def checkLock(self,transactionNum, variableNum):
+	def checkLock(self,transactionNum, variableNum, locktype):
 		# get transactionNum
 		# return -1 for site failed, 0 for success, 1 for lock conflict, 
 		# return TNum1 and TNum2 where TNum1 is waiting for TNum2 
 		# return TNum2 = _ if success or failed
-		return TNum1, TNum2 
+		Fail = False
+		TNum1 = transactionNum
+		TNum2List = []
+		if self.status == False:
+			Fail = True # site fail
+		else:
+			if locktype == project.LOCK_TYPE_READ and not self.variables[variableNum].accessible:
+				Fail = True
+		if not Fail:
+			lockTmp = Lock(locktype,transactionNum)
+			lockResult = lockTmp.lockGranted(self.currentlockTable[variableNum])
+			if not lockResult:
+				# add lock into waittable
+				self.waitlockTable[variableNum].append(lockTmp)
+				for l in self.currentlockTable[variableNum]:
+					TNum2.append(l.transactionNum)
+			else:
+				# add lock into currentLockTable
+				self.currentlockTable[variableNum].append(lockTmp)
+		return TNum1, TNum2List, Fail
 	def removeLock(self,transactionNum, variableNum):
 		# remove lock, change next wait lock's state
+		# remove edge ???? 
+		removeLockList = []
+		for l in self.currentLockList:
+			if l.transactionNum == transactionNum:
+				removeLockList.append(l)
+		for l in removeLockList:
+			self.currentLockList.remove(l)
+		removeLockList = []
+		for l in self.waitlockTable:
+			lockResult = l.lockGranted(self.currentLockList)
+			if lockResult:
+				removeLockList.append(l) # remove
+				self.currentLockList.append(l) # add to currentLockList
+			else:
+				break
+		for l in removeLockList:
+			self.currentLockList.remove(l)
 		return
 	def fail(self):
 		self.state = False 
@@ -201,15 +256,63 @@ class DataManager(object):
 		return
 	def recover(self):
 		# clear lock table, remove lock, change transaction status, change variable's accessible
+		transactionList = []
+		for l in currentLockList:
+			if l.transactionNum not in transactionList:
+				transactionList.append(l.transactionNum)
+		for l in waitlockTable:
+			if l.transactionNum not in transactionList:
+				transactionList.append(l.transactionNum)
+		for t in transactionList:
+			if project.TransactionList[i].status != project.TRANSACTION_STATUS_COMMIT:
+				project.TransactionList[i].status = project.TRANSACTION_STATUS_ABORT
+		for v in self.variables:
+			# donot remove version 
+			if v.type == project.VARIABLE_TYPE_REPLICATE:
+			for vTmp in v:
+				v.notAccessible()
+		self.currentLockList = {}
+		self.waitlockTable = {}
+		self.status = True
 		return
-	def getValue(self,variableNum,transactionType):
+	def getValue(self,variableNum,transactionNum):
 		# return -1 when accessible == false, return value if transactionType is not readOnly
-		# return _ when readOnly
-		return
-	def update(self,variableNum,value):
+		# return the latest version which version less than transactionVersion
+		# if not 
+		Fail = False
+		if self.status == False:
+			Fail = True
+		vTmpVersion = -1
+		vTmpValue = -1
+		transactionVersion = project.TransactionList[transactionNum].index
+		if not Fail:
+			for vTmp in self.variables[variableNum]:
+				if vTmp.accessible == False:
+					Fail = True
+					break
+				if vTmp.version > vTmpVersion and vTmp.version < transactionVersion:
+					vTmpValue = vTmp.value
+					vTmpVersion = transactionVersion
+		return vTmpValue, Fail
+	def update(self,variableNum,value,transactionNum):
 		# return -1 when accessible == false, return 1 if success add new version 
 		# change variable's accessible 
-		return
+		Fail = False
+		if self.status == False:
+			Fail = True
+		transactionVersion = project.TransactionList[transactionNum].index
+		variabletype = -1
+		if variableNum % 2 == 0:
+			variabletype = project.VARIABLE_TYPE_REPLICATE
+		else:
+			variabletype = project.VARIABLE_TYPE_NORMAL
+		if not Fail:
+			variableTmp = VariableInSite(variableNum,variabletype,transactionVersion)
+			self.variables[variableNum].append(variableTmp)
+			for v in self.variables[variableNum]:
+				if v.accessible == False:
+					v.accessible = True
+		return Fail
 
 		
 		
