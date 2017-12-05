@@ -1,6 +1,6 @@
 import module
-
-
+import sys
+import re
 # global state 
 
 VARIABLE_TYPE_REPLICATE = "replicated"
@@ -27,7 +27,7 @@ COMMAND_STATUS_FAIL = "fail"
 
 DataManagerList = [] # list of sites 10 for this situation
 VariableSiteList = {} # 20 list store site for each variable
-TransactionList = [] # all transaction
+TransactionList = {} # all transaction
 
 
 if __name__ == "__main__":
@@ -48,4 +48,23 @@ if __name__ == "__main__":
     	print()
 
     TM = module.TransactionMachine()
+
+    # read input from terminal
+    END = "END"
+    while 1:
+    	try:
+    		line = sys.stdin.readline()
+    	except KeyboardInterrupt:
+    		break
+    	if not line:
+    		break
+    	command = re.search('(([a-zA-Z]+))',line).group(0) if re.search('([a-zA-Z]+)',line) else 'NONE'
+    	transactionNum = re.search('T([0-9]+)',line).group(1) if re.search('T([0-9]+)',line) else 'NONE'
+    	variableNum = re.search('[x]([0-9]+)',line).group(1) if re.search('[x]([0-9]+)',line) else 'NONE'
+    	siteNumFirst = re.search('[(]([0-9]+)[)]',line).group(0) if re.search('[(]([0-9]+)[)]',line) else 'NONE'
+    	siteNum = re.search('([0-9]+)',line).group(0) if re.search('([0-9]+)',siteNumFirst) else 'NONE'
+    	valueFirst = re.search('[,]([0-9]+)[)]',line).group(0) if re.search('[,]([0-9]+)[)]',line) else 'NONE'
+    	value = re.search('([0-9]+)',line).group(0) if re.search('([0-9]+)',valueFirst) else 'NONE'
+    	print(line)
+
     print("get main.")
