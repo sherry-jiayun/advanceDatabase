@@ -92,7 +92,7 @@ class TransactionMachine(object):
 		transTmp = Transaction(self.index, transactionNum, False)# create transaction
 		self.index = self.index + 1# add index
 		project.TransactionList[transactionNum] = transTmp# append to transactionList
-		self.graph[transactionNum] = []# add vertex to graph
+		__addVertex(self,transactionNum)# add vertex to graph
 		# return nothing
 		print("Transaction {} begin.".format(transactionNum))
 		return
@@ -108,7 +108,7 @@ class TransactionMachine(object):
 			TNum1, TNum2List, Result = siteList[i].checkLock(transactionNum,commandtype,variableNum)
 			# if result contains wait, change command's status to wait and add edges
 			if TNum1 == project.LOCK_STATUS_WAIT:
-				graph[TNum2].append(transactionNum)	
+				__addEdge(self,transactionNum,TNum2)	
 				commandTmp.status = project.COMMAND_STATUS_WAIT
 				fail = False
 			# if result contains only success or fail and success > 0, change command's status to success
@@ -120,7 +120,6 @@ class TransactionMachine(object):
 		project.transactionList[transactionNum].commandlist.append(commandTmp)
 
 		# deadlock detect
-		edgeList = graph[TNum2]
 
 		return
 
@@ -144,8 +143,10 @@ class TransactionMachine(object):
 		return
 
 	def __addVertex(self,transactionNum):
+		self.graph[transactionNum] = []
 		return
 	def __addEdge(self,transactionNum1,transactionNum2):
+		self.graph[transactionNum2].append(transactionNum1)	
 		return
 	def __deleteVertex(self):
 		return
