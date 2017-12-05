@@ -9,4 +9,5 @@ if __name__ == "__main__":
     #generateMarket()
     TM = module.TransactionMachine()
     DM = module.DataManager(0)
+    DM = module.DataManager(0)
     print("get main.")
