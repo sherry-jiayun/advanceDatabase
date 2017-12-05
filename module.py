@@ -89,19 +89,22 @@ class TransactionMachine(object):
 		self.graph = {}
 	def begin(self,transactionNum):
 		# input is the number of transaction
-		# create transaction
-		# add index
-		# append to transactionList
-		# add vertex to graph
+		transTmp = Transaction(self.index, transactionNum, False)# create transaction
+		self.index = self.index + 1# add index
+		project.TransactionList[transactionNum] = transTmp# append to transactionList
+		self.graph[transactionNum] = []# add vertex to graph
 		# return nothing
 		print("Transaction {} begin.".format(transactionNum))
 		return
 
 	def write(self,transactionNum, variableNum, variableValue):
-		# create command object 
-		# check if variable legal, if not change transaction's status to fail directly
-		# get site list
-		# go through list and checkLock()
+		commandTmp = Command(2, transactionNum, variableNum, variableValue)# create command object 
+		if project.VariableSiteList.has_key(variableValue) == False:# check if variable legal, if not change transaction's status to fail directly
+			project.TransactionList[transactionNum].status = 2
+		siteList = project.VariableSiteList[variableValue]# get site list
+		for i in siteList:# go through list and checkLock()
+			if checkLock(transactionNum, variableNum) == 1:
+				project.TransactionList[transactionNum].status = 1
 		# if result contains wait, change transaction's status to wait and add edges
 		# if result contains only success or fail and success > 0, change transaction's status to success
 		# deadlock detect
