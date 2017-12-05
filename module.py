@@ -111,7 +111,7 @@ class TransactionMachine(object):
 		transTmp = Transaction(self.index, transactionNum, False)# create transaction
 		self.index = self.index + 1# add index
 		project.TransactionList[transactionNum] = transTmp# append to transactionList
-		self.graph[transactionNum] = []# add vertex to graph
+		__addVertex(self,transactionNum)# add vertex to graph
 		# return nothing
 		print("Transaction {} begin.".format(transactionNum))
 		return
@@ -119,14 +119,27 @@ class TransactionMachine(object):
 	def write(self,transactionNum, variableNum, variableValue):
 		commandTmp = Command(2, transactionNum, variableNum, variableValue)# create command object 
 		if project.VariableSiteList.has_key(variableValue) == False:# check if variable legal, if not change transaction's status to fail directly
-			project.TransactionList[transactionNum].status = 2
+			project.TransactionList[transactionNum].status = project.TRANSACTION_STATUS_ABORT
 		siteList = project.VariableSiteList[variableValue]# get site list
+
+		fail = True
 		for i in siteList:# go through list and checkLock()
-			if checkLock(transactionNum, variableNum) == 1:
-				project.TransactionList[transactionNum].status = 1
-		# if result contains wait, change transaction's status to wait and add edges
-		# if result contains only success or fail and success > 0, change transaction's status to success
+			TNum1, TNum2List, Result = siteList[i].checkLock(transactionNum,commandtype,variableNum)
+			# if result contains wait, change command's status to wait and add edges
+			if TNum1 == project.LOCK_STATUS_WAIT:
+				__addEdge(self,transactionNum,TNum2)	
+				commandTmp.status = project.COMMAND_STATUS_WAIT
+				fail = False
+			# if result contains only success or fail and success > 0, change command's status to success
+			elif TNum1 == project.LOCK_STATUS_GRANTED:
+				commandTmp.status = project.COMMAND_STATUS_SUCCESS
+				fail = False
+		if fail:
+			commandTmp.status = project.COMMAND_STATUS_FAIL
+		project.transactionList[transactionNum].commandlist.append(commandTmp)
+
 		# deadlock detect
+
 		return
 
 	def read(self,transactionNum, variableNum):
@@ -149,8 +162,10 @@ class TransactionMachine(object):
 		return
 
 	def __addVertex(self,transactionNum):
+		self.graph[transactionNum] = []
 		return
 	def __addEdge(self,transactionNum1,transactionNum2):
+		self.graph[transactionNum2].append(transactionNum1)	
 		return
 	def __deleteVertex(self):
 		return
