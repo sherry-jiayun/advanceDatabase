@@ -1,5 +1,31 @@
 import project 
 
+
+'''
+# global state 
+
+VARIABLE_TYPE_REPLICATE = 0
+VARIABLE_TYPE_NORMAL = 1
+
+LOCK_TYPE_READ = 0
+LOCK_TYPE_WRITE = 1
+
+LOCK_STATUS_INITIALIZE = -1
+LOCK_STATUS_GRANTED = 0
+LOCK_STATUS_WAIT = 1
+
+TRANSACTION_STATUS_INITIALIZE = -1
+TRANSACTION_STATUS_COMMIT = 0
+TRANSACTION_STATUS_WAIT = 1
+TRANSACTION_STATUS_ABORT = 2 
+
+COMMAND_STATUS_INITIALIZE = -1
+COMMAND_STATUS_SUCCESS = 0
+COMMAND_STATUS_WAIT = 1
+COMMAND_STATUS_FAIL = 2
+'''
+
+
 class VariableInSite(object):
 	def __init__(self, index, variabletype, version = 0):
 		self.type = variabletype # 0 for replicate and 1 for not
@@ -115,26 +141,32 @@ class DataManager(object):
 		self.status = True # true for on false for off
 		self.index = index # site number
 		self.variables = {} # store the list of variable in all version 
-		self.lockTable = {} # store the lock list for each variable
+		self.currentlockTable = {} # store the lock list for each variable where all locks in this table have being granted
+		self.waitlockTable = {} # store the lock list for each variable where all locks in this table have to wait
 		self.transactionDM = {} # store the index of trnsaction that reach this site for each variable, incase duplicate lock
 		for i in range(20):
 			iNum = i + 1
 			if iNum % 2 == 0:
-				self.lockTable[iNum] = {}
+
+				self.currentlockTable[iNum] = {}
+				self.waitlockTable[iNum] = {}
+
 				self.variables[iNum] = []
-				variableTmp = VariableInSite(iNum,0)
+				variableTmp = VariableInSite(iNum,project.VARIABLE_TYPE_REPLICATE)
 				self.variables[iNum].append(variableTmp)
 			else: 
 				if iNum % 10 + 1 == self.index:
-					self.lockTable[iNum] = {}
+
+					self.currentlockTable[iNum] = {}
+					self.waitlockTable[iNum] = {}
+
 					self.variables[iNum] = []
-					variableTmp = VariableInSite(iNum,1)
+					variableTmp = VariableInSite(iNum,project.VARIABLE_TYPE_NORMAL)
 					self.variables[iNum].append(variableTmp)
+
 		for vl in self.variables.keys():
 			for v in self.variables[vl]:
 				v.getInfo()
-		for l in self.lockTable.keys():
-			print("lockList for variable {0} is {1}".format(l,self.lockTable[l]))
 
 	def checkLock(self,transactionNum, variableNum):
 		# get transactionNum
