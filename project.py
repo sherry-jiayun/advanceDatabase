@@ -69,6 +69,7 @@ if __name__ == "__main__":
     	value = re.search('([0-9]+)',valueFirst).group(0) if re.search('([0-9]+)',valueFirst) else 'NONE'
     	print("Command {0} for tansaction {1} or site {2} for variable {3} with value {4}".format(command,transactionNum,siteNum,variableNum,value))
 
-    	
+    	if 'begin' in command:
+    		TM.begin(transactionNum)
 
     print("get main.")

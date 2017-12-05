@@ -63,7 +63,7 @@ class Lock(object):
 		sefl.transactionNum = transactionNum # may drop transactionList in DM
 
 class Transaction(object):
-	def __init__(self, index, transactionNum, readOnly,currentVariableValue):
+	def __init__(self, index, transactionNum, readOnly,currentVariableValue = {}):
 		self.index = index # time stamp
 		self.name = transactionNum # transaction number 
 		self.readOnly = readOnly # true or false
