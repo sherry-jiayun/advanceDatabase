@@ -1,22 +1,23 @@
 import project 
 
 class VariableInSite(object):
-	def __init__(self, index, variabletype):
+	def __init__(self, index, variabletype, version = 0):
 		self.type = variabletype # 0 for replicate and 1 for not
 		self.index = index
 		self.value = 10 * index # for initialize 
 		self.accessible = True # for initialize
+		self.version = version # 0 for initialize increase by transaction index 
 	def getInfo(self):
-		print("Variable {0} with type {1} and value {2} and accessible {3}".format(self.index,self.type,self.value,self.accessible))
+		print("Variable {0} with type {1} version {2} and value {3} and accessible {4}".format(self.index,self.type,self.version,self.value,self.accessible))
 		return
 	def notAccessible(self):
 		self.value = 10 * index # retun to initialize
 		self.accessible = fail
-		print("Variable {0} with type {1} and value {2} and accessible {3}".format(self.index,self.type,self.value,self.accessible))
+		print("Variable {0} with type {1} version {2} and value {3} and accessible {4}".format(self.index,self.type,self.version,self.value,self.accessible))
 	def updateValue(self,value):
 		self.value = value
 		_grantedAccessible()
-		print("variable {0} with type {1} and value {2} updated".format(self.index,self.type,self.value))
+		print("variable {0} with type {1} and value {2} updated to version {3}".format(self.index,self.type,self.value,self.version))
 	def _grantedAccessible(self):
 		if self.accessible == False:
 			self.accessible = True
@@ -36,12 +37,13 @@ class Lock(object):
 		sefl.transactionNum = transactionNum # may drop transactionList in DM
 
 class Transaction(object):
-	def __init__(self, index, readOnly,currentVariableValue):
-		self.index = index
+	def __init__(self, index, transactionNum, readOnly,currentVariableValue):
+		self.index = index # time stamp
+		self.name = transactionNum # transaction number 
 		self.readOnly = readOnly # true or false
 		self.commandlist = [] # store all command
 		self.status = -1 # -1 for initialize, 0 for success, 1 for wait, 2 for fail
-		self.currentVariableValue = currentVariableValue # for readOnly
+		# self.currentVariableValue = currentVariableValue # for readOnly
 
 
 class Command(object):
@@ -112,21 +114,25 @@ class DataManager(object):
 	def __init__(self, index):
 		self.status = True # true for on false for off
 		self.index = index # site number
-		self.variables = [] # store the list of variable 
+		self.variables = {} # store the list of variable in all version 
 		self.lockTable = {} # store the lock list for each variable
 		self.transactionDM = {} # store the index of trnsaction that reach this site for each variable, incase duplicate lock
 		for i in range(20):
-			if i % 2 == 0:
-				self.lockTable[i] = {}
-				self.transactionDM[i] = {}
-				variableTmp = VariableInSite(i,0)
-				self.variables.append(variableTmp)
-			if i % 10 + 1 == index:
-				self.lockTable[i] = {}
-				variableTmp = VariableInSite(i,1)
-				self.variables.append(variableTmp)
-		for v in self.variables:
-			v.getInfo()
+			iNum = i + 1
+			if iNum % 2 == 0:
+				self.lockTable[iNum] = {}
+				self.variables[iNum] = []
+				variableTmp = VariableInSite(iNum,0)
+				self.variables[iNum].append(variableTmp)
+			else: 
+				if iNum % 10 + 1 == self.index:
+					self.lockTable[iNum] = {}
+					self.variables[iNum] = []
+					variableTmp = VariableInSite(iNum,1)
+					self.variables[iNum].append(variableTmp)
+		for vl in self.variables.keys():
+			for v in self.variables[vl]:
+				v.getInfo()
 		for l in self.lockTable.keys():
 			print("lockList for variable {0} is {1}".format(l,self.lockTable[l]))
 
@@ -149,7 +155,7 @@ class DataManager(object):
 		# return _ when readOnly
 		return
 	def update(self,variableNum,value):
-		# return -1 when accessible == false, return 1 if success
+		# return -1 when accessible == false, return 1 if success add new version 
 		# change variable's accessible 
 		return
 
