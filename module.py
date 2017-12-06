@@ -71,14 +71,10 @@ class Lock(object):
 					break 
 		if self.locktype == global_var.LOCK_TYPE_READ:
 			for l in currentLockList:
-<<<<<<< HEAD
-				# 如果前面有读操作的话，读的是以前的还是改过的呢？
-				# 如果当前是一个读lock,前面不能有任何不是自己的写lock
 				if l.locktype == global_var.LOCK_TYPE_WRITE and l.transactionNum != self.transactionNum:
-					# 前面有写操作，并且不是同一个transaction，拒绝
-=======
+					granted = False
+					break
 				if l.locktype == project.LOCK_TYPE_WRITE and l.transactionNum != self.transactionNum:
->>>>>>> 8a016ea97e450765d595903b1591b3cf4efe85c1
 					granted = False
 					break
 		return granted
