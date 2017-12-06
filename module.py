@@ -120,6 +120,7 @@ class TransactionMachine(object):
 		self.index = 0
 		self.graph = {}
 		self.waitcommittransaction = []
+		self.cycleTransaction = []
 	def begin(self,transactionNum):
 		# input is the number of transaction
 		transTmp = Transaction(self.index, transactionNum, False)# create transaction
@@ -200,6 +201,7 @@ class TransactionMachine(object):
 		self.index = self.index + 1
 		# deadlock detect
 		print("Transaction {0} want to write to variable {1} with value {2} granted? {3}".format(transactionNum,variableNum,variableValue,commandLock.status))
+		self.__deadLock()
 		return
 	def readCommand(self,transactionNum,variableNum):
 		if global_var.TransactionList[transactionNum].readOnly:
@@ -334,6 +336,7 @@ class TransactionMachine(object):
 		global_var.TransactionList[transactionNum].addCommand(commandTmp)
 		self.index = self.index + 1
 		# deadlock detect
+		self.__deadLock()
 		print("Transaction {0} want to read to variable {1} with value {2} granted? {3}".format(transactionNum,variableNum,commandTmp.value,commandLock.status))
 		return
 	def endCommand(self,transactionNum):
@@ -521,7 +524,7 @@ class TransactionMachine(object):
 	def __abort(self,transactionNum):
 		# call when abort happend 
 		print()
-		# print("transaction {0} abort".format(transactionNum))
+		print("transaction {0} abort".format(transactionNum))
 		newGrantedLockList = []
 		for commandNum in global_var.TransactionList[transactionNum].commandlist:
 			commandTmp = global_var.TransactionList[transactionNum].commandlist[commandNum]
@@ -588,24 +591,37 @@ class TransactionMachine(object):
 		self.graph[3] = [4]
 		self.graph[4] = [1]
 		print (self.__isCyclic())
+		print (self.cycleTransaction)
 	def __deadLock(self):
-		return true
+		self.cycleTransaction = []
+		print()
+		cycle = self.__isCyclic()
+		print(self.cycleTransaction)
+		youngest = None
+		for t in self.cycleTransaction:
+			if youngest == None or global_var.TransactionList[youngest].index < global_var.TransactionList[t].index:
+				youngest = t
+		print ("youngest transaction {}".format(youngest))
+		if cycle and youngest != None:
+			self.__abort(youngest)
+		return
 	# A recursive function that uses visited[] and parent to detect
 	# cycle in subgraph reachable from vertex v.
 	def __isCyclicUtil(self,v,visited,recStack):
 		#Mark the current node as visited 
 		visited[v]= True
 		recStack[v] = True
-		print("{} is True".format(v))
 		#Recur for all the vertices adjacent to this vertex
 		for neighbour in self.graph[v]:
 			# If the node is not visited then recurse on it
 			if visited[neighbour]==False : 
 				if(self.__isCyclicUtil(neighbour,visited,recStack)):
+					self.cycleTransaction.append(v)
 					return True
 			# If an adjacent vertex is visited and not parent of current vertex,
 			# then there is a cycle
 			elif recStack[v] == True:
+				self.cycleTransaction.append(v)
 				return True
 		recStack[v] = False
 		return False
@@ -617,7 +633,6 @@ class TransactionMachine(object):
 		for key in self.graph.keys():
 			visited[key] = False
 			recStack[key] = False
-		print(visited)
 		# Call the recursive helper function to detect cycle in different
 		#DFS trees
 		for node in visited.keys():

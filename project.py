@@ -37,7 +37,7 @@ if __name__ == "__main__":
 	
 	TM = module.TransactionMachine()
 	# Test 1
-	'''TM.begin(1)
+	TM.begin(1)
 	TM.begin(2)
 	print()
 
@@ -49,8 +49,8 @@ if __name__ == "__main__":
 	print()
 	TM.write(2,1,201)
 	print()
-	TM.abort_test(1)
-	TM.endCommand(1)'''
+	#TM.abort_test(1)
+	TM.endCommand(1)
 
 	# Test 2
 	'''TM.begin(1)
@@ -81,13 +81,13 @@ if __name__ == "__main__":
 	# TM.deadLock_test()
 
 	# Test 4 
-	TM.beginRO(1)
+	'''TM.beginRO(1)
 	print()
 	TM.fail(2)
 	print()
 	TM.readCommand(1,1)
 	print()
-	TM.readCommand(1,1)
+	TM.readCommand(1,1)'''
 
 
 	#TM.read(1,1)
