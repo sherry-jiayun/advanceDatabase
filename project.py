@@ -38,6 +38,7 @@ if __name__ == "__main__":
 	TM = module.TransactionMachine()
 	TM.begin(1)
 	TM.write(1,1,101)
+	global_var.DataManagerList[2].fail()
 	TM.begin(2)
 	TM.write(2,1,103)
 	'''while 1:
