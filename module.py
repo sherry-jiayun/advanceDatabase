@@ -145,6 +145,7 @@ class TransactionMachine(object):
 		for i in siteList:# go through list and checkLock()
 			print("chack lock from site {}".format(i))
 			TNum1, TNum2List, Fail = global_var.DataManagerList[i].checkLock(transactionNum,variableNum,commandLock)
+			print(TNum2List, Fail)
 			# if result contains wait, change command's status to wait and add edges
 			if not Fail and len(TNum2List) <= 0:
 				# not fail and wait no transaction
@@ -181,6 +182,12 @@ class TransactionMachine(object):
 			commandTmp.putLock(commandLock)
 			commandTmp.status = global_var.COMMAND_STATUS_WAIT
 			print("lock check wait and some site failed")
+		elif not result_success and not result_wait and result_fail:
+			# all fail
+			commandLock.status = global_var.LOCK_STATUS_WAIT
+			commandTmp.putLock(commandLock)
+			commandTmp.status = global_var.COMMAND_STATUS_WAIT
+			print("lock wait because all sites failed")
 		else:
 			print("but situation happend because unconsistent")
 		
@@ -228,7 +235,7 @@ class TransactionMachine(object):
 		for i in transactionNum2:
 			if i not in self.graph[transactionNum1]:
 				self.graph[transactionNum1].append(i)
-		print(self.graph)
+		print("current graph {}".format(self.graph))
 		return
 	def __deleteVertex(self):
 		return
@@ -274,6 +281,8 @@ class DataManager(object):
 		Fail = False
 		TNum1 = transactionNum
 		TNum2List = []
+
+		#print("site {0} current status {1}".format(self.index,self.status))
 		if self.status == False:
 			Fail = True # site fail
 		if not Fail:
@@ -319,7 +328,7 @@ class DataManager(object):
 			self.currentLockList.remove(l)
 		return newGrantedLock
 	def fail(self):
-		self.state = False 
+		self.status = False 
 		print("site {0} failed".format(self.index))
 		return
 	def recover(self):
