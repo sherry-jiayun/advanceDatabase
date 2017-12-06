@@ -1,2 +1,0 @@
-# advanceDatabase
-Advance Database Project 
