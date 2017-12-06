@@ -39,8 +39,7 @@ class VariableInSite(object):
 		print("Variable {0} with type {1} version {2} and value {3} and accessible {4}".format(self.index,self.type,self.version,self.value,self.accessible))
 		return
 	def notAccessible(self):
-		self.value = 10 * index # retun to initialize
-		self.accessible = fail
+		self.accessible = False
 		print("Variable {0} with type {1} version {2} and value {3} and accessible {4}".format(self.index,self.type,self.version,self.value,self.accessible))
 	def updateValue(self,value):
 		self.value = value
@@ -484,22 +483,27 @@ class DataManager(object):
 		return
 	def recover(self):
 		# clear lock table, remove lock, change transaction status, change variable's accessible
+		# find all transaction that reach this site
 		transactionList = []
-		for l in currentlockTable:
-			if l.transactionNum not in transactionList:
-				transactionList.append(l.transactionNum)
-		for l in waitlockTable:
-			if l.transactionNum not in transactionList:
-				transactionList.append(l.transactionNum)
+		for variableNum in self.currentlockTable.keys():
+			for l in self.currentlockTable[variableNum]:
+				if l.transactionNum not in transactionList:
+					transactionList.append(l.transactionNum)
+			self.currentlockTable[variableNum] = []
+		for variableNum in self.waitlockTable.keys():
+			for l in self.waitlockTable[variableNum]:
+				if l.transactionNum not in transactionList:
+					transactionList.append(l.transactionNum)
+			self.waitlockTable[variableNum] = []
+		# abort them if not commit
 		for t in transactionList:
-			if global_var.TransactionList[i].status != global_var.TRANSACTION_STATUS_COMMIT:
-				global_var.TransactionList[i].status = global_var.TRANSACTION_STATUS_ABORT
-		for v in self.variables:
-			# donot remove version 
-			if v.type == global_var.VARIABLE_TYPE_REPLICATE:
-				v.notAccessible()
-		self.currentlockTable = {}
-		self.waitlockTable = {}
+			if global_var.TransactionList[t].status != global_var.TRANSACTION_STATUS_COMMIT:
+				global_var.TransactionList[t].status = global_var.TRANSACTION_STATUS_ABORT
+		for variableNum in self.variables.keys():
+			for v in self.variables[variableNum]:
+				if v.type == global_var.VARIABLE_TYPE_REPLICATE:
+					v.notAccessible()
+		print(self.currentlockTable,self.waitlockTable,self.variables)
 		self.status = True
 		return
 	def getValue(self,variableNum,commandVersion):
