@@ -264,7 +264,6 @@ class DataManager(object):
 		for v in self.variables:
 			# donot remove version 
 			if v.type == project.VARIABLE_TYPE_REPLICATE:
-			for vTmp in v:
 				v.notAccessible()
 		self.currentLockList = {}
 		self.waitlockTable = {}
