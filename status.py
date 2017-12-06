@@ -1,0 +1,23 @@
+VARIABLE_TYPE_REPLICATE = "replicated"
+VARIABLE_TYPE_NORMAL = "normal"
+
+LOCK_TYPE_READ = "read"
+LOCK_TYPE_WRITE = "write"
+
+LOCK_STATUS_INITIALIZE = "initialize"
+LOCK_STATUS_GRANTED = "granted"
+LOCK_STATUS_WAIT = "wait"
+
+TRANSACTION_STATUS_INITIALIZE = "initialize"
+TRANSACTION_STATUS_COMMIT = "commit"
+TRANSACTION_STATUS_WAIT = "wait"
+TRANSACTION_STATUS_ABORT = "abort"
+
+COMMAND_STATUS_INITIALIZE = "initialize"
+COMMAND_STATUS_SUCCESS = "success"
+COMMAND_STATUS_WAIT = "wait"
+COMMAND_STATUS_FAIL = "fail"
+
+DataManagerList = []
+VariableSiteList = {}
+TransactionList = {}
