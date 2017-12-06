@@ -38,11 +38,23 @@ if __name__ == "__main__":
 	TM = module.TransactionMachine()
 	# Test 1
 	TM.begin(1)
-	TM.begin(2)
+	# TM.begin(2)
 	print()
 
 	TM.write(1,1,101)
 	print()
+	# # TM.write(2,8,88)
+	# print()
+	# TM.fail(2)
+	# print()
+	# TM.read(2,3)
+	# print()
+	# TM.write(1,5,91)
+	# print()
+	# TM.recover(2)
+	# print()
+	# TM.end(2)
+	# print()
 	TM.write(2,2,202)
 	print()
 	TM.write(1,2,102)
@@ -76,6 +88,12 @@ if __name__ == "__main__":
 	TM.readCommand(1,3)
 	print()
 	TM.fail(2)
+<<<<<<< HEAD
+=======
+	TM.readCommand(1,1)
+>>>>>>> 0b4da4fc3e3c6eccf2036d56cf03b7ba73f5c413
+	TM.end(1)
+>>>>>>> cbde4856c8a66a8a267459f11986af4080b87ef8
 	print()
 	TM.write(2,8,88)
 	print()
