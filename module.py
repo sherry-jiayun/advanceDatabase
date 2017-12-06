@@ -65,17 +65,12 @@ class Lock(object):
 		granted = True
 		if self.locktype == project.LOCK_TYPE_WRITE:
 			for l in currentLockList:
-				# 如果有同一个transaction两次试图writelock同一个variable?
-				# 如果当前时一个写lock, 拒绝所有不是自己的lock
 				if l.transactionNum != self.transactionNum:
 					granted = False
 					break 
 		if self.locktype == project.LOCK_TYPE_READ:
 			for l in currentLockList:
-				# 如果前面有读操作的话，读的是以前的还是改过的呢？
-				# 如果当前是一个读lock,前面不能有任何不是自己的写lock
 				if l.locktype == project.LOCK_TYPE_WRITE and l.transactionNum != self.transactionNum:
-					# 前面有写操作，并且不是同一个transaction，拒绝
 					granted = False
 					break
 		return granted
