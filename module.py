@@ -200,14 +200,27 @@ class TransactionMachine(object):
 		return
 
 	def fail(self,datamanagerNum):
+		global_var.DataManagerList[datamanagerNum].fail()
 		return
 
 	def recover(self,datamanagerNum):
+		global_var.DataManagerList[datamanagerNum].recover()
 		return
 
 	def beginRO(self,transactionNum):
 		return
-
+	def dump(self):
+		for i in DataManagerList:
+			for j in DataManager[i].variables:
+				print("Site {0} Variable {1} Value {2}".format(i, j, DataManager[i].variables[j]))
+		return
+	def dump(self, datamanagerNum):
+		for j in DataManager[datamanagerNum].variables:
+			print("Site {0} Variable {1} Value {2}".format(datamanagerNum, j, DataManager[datamanagerNum].variables[j]))
+		return
+	def dump(self, datamanagerNum, variableNum):
+		print("Site {0} Variable {1} Value {2}".format(datamanagerNum, variableNum, DataManager[datamanagerNum].variables[variableNum]))
+		return
 	def __addVertex(self,transactionNum):
 		self.graph[transactionNum] = []
 		return
