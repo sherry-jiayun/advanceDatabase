@@ -20,7 +20,7 @@ if __name__ == "__main__":
 
 	# generate variable list
 	for i in range(20):
-		if i % 2 == 0:
+		if (i + 1) % 2 == 0:
 			global_var.VariableSiteList[i+1] = [1,2,3,4,5,6,7,8,9,10]
 		else:
 			global_var.VariableSiteList[i+1] = [1+(i+1) % 10]
@@ -32,12 +32,14 @@ if __name__ == "__main__":
 	for i in range(10):
 		print("site {}".format(i+1))
 		DM = module.DataManager(i+1)
-		global_var.DataManagerList.append(DM)
+		global_var.DataManagerList[i+1] = DM
 		print()
 	
 	TM = module.TransactionMachine()
 	TM.begin(1)
 	TM.write(1,1,101)
+	TM.begin(2)
+	TM.write(2,1,103)
 	'''while 1:
 		try:
 			line = sys.stdin.readline()

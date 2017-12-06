@@ -7,10 +7,12 @@ LOCK_TYPE_WRITE = "write"
 LOCK_STATUS_INITIALIZE = "initialize"
 LOCK_STATUS_GRANTED = "granted"
 LOCK_STATUS_WAIT = "wait"
+LOCK_STATUS_FAIL = "fail"
 
 TRANSACTION_STATUS_INITIALIZE = "initialize"
 TRANSACTION_STATUS_COMMIT = "commit"
 TRANSACTION_STATUS_WAIT = "wait"
+TRANSACTION_STATUS_WAIT_COMMIT = "wait for commit"
 TRANSACTION_STATUS_ABORT = "abort"
 
 COMMAND_STATUS_INITIALIZE = "initialize"
@@ -18,6 +20,6 @@ COMMAND_STATUS_SUCCESS = "success"
 COMMAND_STATUS_WAIT = "wait"
 COMMAND_STATUS_FAIL = "fail"
 
-DataManagerList = []
+DataManagerList = {}
 VariableSiteList = {}
 TransactionList = {}

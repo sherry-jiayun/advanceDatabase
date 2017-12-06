@@ -4,25 +4,27 @@ import status as global_var
 '''
 # global state 
 
-VARIABLE_TYPE_REPLICATE = 0
-VARIABLE_TYPE_NORMAL = 1
+VARIABLE_TYPE_REPLICATE = "replicated"
+VARIABLE_TYPE_NORMAL = "normal"
 
-LOCK_TYPE_READ = 0
-LOCK_TYPE_WRITE = 1
+LOCK_TYPE_READ = "read"
+LOCK_TYPE_WRITE = "write"
 
-LOCK_STATUS_INITIALIZE = -1
-LOCK_STATUS_GRANTED = 0
-LOCK_STATUS_WAIT = 1
+LOCK_STATUS_INITIALIZE = "initialize"
+LOCK_STATUS_GRANTED = "granted"
+LOCK_STATUS_WAIT = "wait"
+LOCK_STATUS_FAIL = "fail"
 
-TRANSACTION_STATUS_INITIALIZE = -1
-TRANSACTION_STATUS_COMMIT = 0
-TRANSACTION_STATUS_WAIT = 1
-TRANSACTION_STATUS_ABORT = 2 
+TRANSACTION_STATUS_INITIALIZE = "initialize"
+TRANSACTION_STATUS_COMMIT = "commit"
+TRANSACTION_STATUS_WAIT = "wait"
+TRANSACTION_STATUS_WAIT_COMMIT = "wait for commit"
+TRANSACTION_STATUS_ABORT = "abort"
 
-COMMAND_STATUS_INITIALIZE = -1
-COMMAND_STATUS_SUCCESS = 0
-COMMAND_STATUS_WAIT = 1
-COMMAND_STATUS_FAIL = 2
+COMMAND_STATUS_INITIALIZE = "initialize"
+COMMAND_STATUS_SUCCESS = "success"
+COMMAND_STATUS_WAIT = "wait"
+COMMAND_STATUS_FAIL = "fail"
 '''
 
 
@@ -97,7 +99,7 @@ class Transaction(object):
 
 
 class Command(object):
-	def __init__(self, commandtype, transactionNum, variableNum, value, commandNum, commandLock):
+	def __init__(self, commandtype, transactionNum, variableNum, value, commandNum):
 		self.commandtype = commandtype # 1 for read, 2 for write
 		self.transactionNum = transactionNum 
 		if variableNum % 2 == 0:
@@ -107,6 +109,8 @@ class Command(object):
 		self.value = value # none for read
 		self.status = global_var.COMMAND_STATUS_INITIALIZE # -1 for initialize, 0 for success, 1 for wait, 2 for fail 
 		self.commandNum = commandNum
+		
+	def putLock(self,commandLock):
 		self.commandLock = commandLock
 
 class TransactionMachine(object):
@@ -127,7 +131,7 @@ class TransactionMachine(object):
 
 		commandNum = global_var.TransactionList[transactionNum].getNexCommandNum()
 		commandLock = Lock(global_var.LOCK_TYPE_WRITE,transactionNum,variableNum)
-		commandTmp = Command(2, transactionNum, variableNum, variableValue,commandNum,commandLock)# create command object 
+		commandTmp = Command(2, transactionNum, variableNum, variableValue,commandNum)# create command object 
 
 		if 'variableNum' in global_var.VariableSiteList.keys():# check if variable legal, if not change transaction's status to fail directly
 			global_var.TransactionList[transactionNum].status = global_var.TRANSACTION_STATUS_ABORT
@@ -135,23 +139,54 @@ class TransactionMachine(object):
 			# abort now? 
 		
 		siteList = global_var.VariableSiteList[variableNum]# get site list
-		fail = True
+		result_success = False
+		result_wait =False
+		result_fail = False
 		for i in siteList:# go through list and checkLock()
-			TNum1, TNum2List, Result = global_var.DataManagerList[i].checkLock(transactionNum,variableNum,commandLock)
+			print("chack lock from site {}".format(i))
+			TNum1, TNum2List, Fail = global_var.DataManagerList[i].checkLock(transactionNum,variableNum,commandLock)
 			# if result contains wait, change command's status to wait and add edges
-			if TNum1 == global_var.LOCK_STATUS_WAIT:
-				self.__addEdge(transactionNum,TNum2)	
-				commandTmp.status = global_var.COMMAND_STATUS_WAIT
-				fail = False
+			if not Fail and len(TNum2List) <= 0:
+				# not fail and wait no transaction
+				result_success = True
+			if not Fail and len(TNum2List) > 0:
+				# not fail but wait
+				self.__addEdge(transactionNum,TNum2List) # add edge
+				result_wait = True
+			if Fail:
+				# site fail
+				result_fail = True
+				commandLock.status = global_var.LOCK_STATUS_FAIL
 			# if result contains only success or fail and success > 0, change command's status to success
-			elif TNum1 == global_var.LOCK_STATUS_GRANTED:
-				commandTmp.status = global_var.COMMAND_STATUS_SUCCESS
-				fail = False
-		if fail:
-			commandTmp.status = global_var.COMMAND_STATUS_FAIL
-		global_var.transactionList[transactionNum].addCommand(commandTmp)
+			# situation? site fail write wait, site recovery, what should write do?
+		if result_success and not result_wait and not result_fail:
+			# success 
+			commandLock.status = global_var.LOCK_STATUS_GRANTED
+			commandTmp.putLock(commandLock)
+			commandTmp.status = global_var.COMMAND_STATUS_SUCCESS
+		elif not result_success and result_wait and not result_fail:
+			# wait
+			commandLock.status = global_var.LOCK_STATUS_WAIT
+			commandTmp.putLock(commandLock)
+			commandTmp.status = global_var.COMMAND_STATUS_WAIT
+		elif result_success and not result_wait and result_fail:
+			# success but some site fail
+			commandLock.status = global_var.LOCK_STATUS_GRANTED
+			commandTmp.putLock(commandLock)
+			commandTmp.status = global_var.COMMAND_STATUS_SUCCESS
+			print("lock check granted but some site failed")
+		elif not result_success and result_wait and result_fail:
+			# wait but some site fail
+			commandLock.status = global_var.LOCK_STATUS_WAIT
+			commandTmp.putLock(commandLock)
+			commandTmp.status = global_var.COMMAND_STATUS_WAIT
+			print("lock check wait and some site failed")
+		else:
+			print("but situation happend because unconsistent")
+		
+		global_var.TransactionList[transactionNum].addCommand(commandTmp)
 		# deadlock detect
-		print("Transaction {0} want to write to variable {1} with value {2} granted? {3}".format(transactionNum,variableNum,variableValue,commandTmp.status))
+		print("Transaction {0} want to write to variable {1} with value {2} granted? {3}".format(transactionNum,variableNum,variableValue,commandLock.status))
 		return
 
 	def read(self,transactionNum, variableNum):
@@ -177,7 +212,10 @@ class TransactionMachine(object):
 		self.graph[transactionNum] = []
 		return
 	def __addEdge(self,transactionNum1,transactionNum2):
-		self.graph[transactionNum2].append(transactionNum1)	
+		for i in transactionNum2:
+			if i not in self.graph[transactionNum1]:
+				self.graph[transactionNum1].append(i)
+		print(self.graph)
 		return
 	def __deleteVertex(self):
 		return
@@ -196,18 +234,16 @@ class DataManager(object):
 		for i in range(20):
 			iNum = i + 1
 			if iNum % 2 == 0:
-
-				self.currentlockTable[iNum] = {}
-				self.waitlockTable[iNum] = {}
+				self.currentlockTable[iNum] = []
+				self.waitlockTable[iNum] = []
 
 				self.variables[iNum] = []
 				variableTmp = VariableInSite(iNum,global_var.VARIABLE_TYPE_REPLICATE)
 				self.variables[iNum].append(variableTmp)
 			else: 
 				if iNum % 10 + 1 == self.index:
-
-					self.currentlockTable[iNum] = {}
-					self.waitlockTable[iNum] = {}
+					self.currentlockTable[iNum] = []
+					self.waitlockTable[iNum] = []
 
 					self.variables[iNum] = []
 					variableTmp = VariableInSite(iNum,global_var.VARIABLE_TYPE_NORMAL)
@@ -227,19 +263,24 @@ class DataManager(object):
 		TNum2List = []
 		if self.status == False:
 			Fail = True # site fail
-		else:
-			if locktype == global_var.LOCK_TYPE_READ and not self.variables[variableNum].accessible:
-				Fail = True
 		if not Fail:
 			lockResult = lock.lockGranted(self.currentlockTable[variableNum])
 			if not lockResult:
 				# add lock into waittable
-				self.waitlockTable[variableNum].append(lockTmp)
+				self.waitlockTable[variableNum].append(lock)
 				for l in self.currentlockTable[variableNum]:
-					TNum2.append(l.transactionNum)
+					if l.transactionNum not in TNum2List:
+						TNum2List.append(l.transactionNum)
+				# lock.status = global_var.LOCK_STATUS_WAIT
+				print("{0} lock for variable {1} from transaction {2} wait for transaction {3}".format(lock.locktype,variableNum,transactionNum,TNum2List))
 			else:
 				# add lock into currentLockTable
-				self.currentlockTable[variableNum].append(lockTmp)
+				self.currentlockTable[variableNum].append(lock)
+				# lock.status = global_var.LOCK_STATUS_GRANTED
+				print("{0} lock for variable {1} from transaction {2} succeed".format(lock.locktype,variableNum,transactionNum))
+		else:
+			# lock.status = global_var.LOCK_STATUS_FAIL
+			print("{0} lock for variable {1} from transaction {2} site failed".format(lock.locktype,variableNum,transactionNum))
 		return TNum1, TNum2List, Fail
 	def removeLock(self,transactionNum, variableNum):
 		# remove lock, change next wait lock's state
