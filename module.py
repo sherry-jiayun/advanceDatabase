@@ -298,16 +298,16 @@ class TransactionMachine(object):
 	def beginRO(self,transactionNum):
 		return
 	def dump(self):
-		for i in DataManagerList:
-			for j in DataManager[i].variables:
-				print("Site {0} Variable {1} Value {2}".format(i, j, DataManager[i].variables[j]))
+		for i in global_var.DataManagerList:
+			for j in global_var.DataManagerList[i].variables:
+				print("Site {0} Variable {1} Value {2}".format(i, j, global_var.DataManagerList[i].variables[j]))
 		return
 	def dump(self, datamanagerNum):
-		for j in DataManager[datamanagerNum].variables:
-			print("Site {0} Variable {1} Value {2}".format(datamanagerNum, j, DataManager[datamanagerNum].variables[j]))
+		for j in global_var.DataManagerList[i][datamanagerNum].variables:
+			print("Site {0} Variable {1} Value {2}".format(datamanagerNum, j, global_var.DataManagerList[i][datamanagerNum].variables[j]))
 		return
 	def dump(self, datamanagerNum, variableNum):
-		print("Site {0} Variable {1} Value {2}".format(datamanagerNum, variableNum, DataManager[datamanagerNum].variables[variableNum]))
+		print("Site {0} Variable {1} Value {2}".format(datamanagerNum, variableNum, global_var.DataManagerList[i][datamanagerNum].variables[variableNum]))
 		return
 	def __addVertex(self,transactionNum):
 		self.graph[transactionNum] = []
