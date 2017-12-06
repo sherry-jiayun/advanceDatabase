@@ -1,5 +1,5 @@
 import project 
-
+import status as global_var
 
 '''
 # global state 
@@ -57,24 +57,25 @@ class VariableInCommand(object):
 		
 
 class Lock(object):
-	def __init__(self, locktype, transactionNum):
+	def __init__(self, locktype, transactionNum, commandNum):
 		self.locktype = locktype # read lock, write lock
-		self.status = project.LOCK_STATUS_INITIALIZE # -1 for initialize, 0 for get and 1 for wait
-		sefl.transactionNum = transactionNum # may drop transactionList in DM
+		self.status = global_var.LOCK_STATUS_INITIALIZE # -1 for initialize, 0 for get and 1 for wait
+		self.transactionNum = transactionNum # may drop transactionList in DM
+		self.commandNum = commandNum
 	def lockGranted(self, currentLockList):
 		granted = True
-		if self.locktype == project.LOCK_TYPE_WRITE:
+		if self.locktype == global_var.LOCK_TYPE_WRITE:
 			for l in currentLockList:
 				# 如果有同一个transaction两次试图writelock同一个variable?
 				# 如果当前时一个写lock, 拒绝所有不是自己的lock
 				if l.transactionNum != self.transactionNum:
 					granted = False
 					break 
-		if self.locktype == project.LOCK_TYPE_READ:
+		if self.locktype == global_var.LOCK_TYPE_READ:
 			for l in currentLockList:
 				# 如果前面有读操作的话，读的是以前的还是改过的呢？
 				# 如果当前是一个读lock,前面不能有任何不是自己的写lock
-				if l.locktype == project.LOCK_TYPE_WRITE and l.transactionNum != self.transactionNum:
+				if l.locktype == global_var.LOCK_TYPE_WRITE and l.transactionNum != self.transactionNum:
 					# 前面有写操作，并且不是同一个transaction，拒绝
 					granted = False
 					break
@@ -86,13 +87,19 @@ class Transaction(object):
 		self.index = index # time stamp
 		self.name = transactionNum # transaction number 
 		self.readOnly = readOnly # true or false
-		self.commandlist = [] # store all command
+		self.commandlist = {} # store all command
 		self.status = -1 # -1 for initialize, 0 for success, 1 for wait, 2 for fail
 		self.currentVariableValue = currentVariableValue # for readOnly
+		self.commandNum = 0 # initialized with 0 
+	def addCommand(self,command):
+		self.commandlist[command.commandNum] = command
+		self.commandNum = self.commandNum + 1
+	def getNexCommandNum(self):
+		return self.commandNum
 
 
 class Command(object):
-	def __init__(self, commandtype, transactionNum, variableNum, value):
+	def __init__(self, commandtype, transactionNum, variableNum, value, commandNum, commandLock):
 		self.commandtype = commandtype # 1 for read, 2 for write
 		self.transactionNum = transactionNum 
 		if variableNum % 2 == 0:
@@ -100,7 +107,9 @@ class Command(object):
 		else:
 			self.variable = VariableInCommand(variableNum,1,value)
 		self.value = value # none for read
-		self.status = project.COMMAND_STATUS_INITIALIZE # -1 for initialize, 0 for success, 1 for wait, 2 for fail 
+		self.status = global_var.COMMAND_STATUS_INITIALIZE # -1 for initialize, 0 for success, 1 for wait, 2 for fail 
+		self.commandNum = commandNum
+		self.commandLock = commandLock
 
 class TransactionMachine(object):
 	def __init__(self):
@@ -110,36 +119,41 @@ class TransactionMachine(object):
 		# input is the number of transaction
 		transTmp = Transaction(self.index, transactionNum, False)# create transaction
 		self.index = self.index + 1# add index
-		project.TransactionList[transactionNum] = transTmp# append to transactionList
+		global_var.TransactionList[transactionNum] = transTmp# append to transactionList
 		self.__addVertex(transactionNum)# add vertex to graph
 		# return nothing
 		print("Transaction {} begin.".format(transactionNum))
 		return
 
 	def write(self,transactionNum, variableNum, variableValue):
-		commandTmp = Command(2, transactionNum, variableNum, variableValue)# create command object 
-		if project.VariableSiteList.has_key(variableValue) == False:# check if variable legal, if not change transaction's status to fail directly
-			project.TransactionList[transactionNum].status = project.TRANSACTION_STATUS_ABORT
-		siteList = project.VariableSiteList[variableValue]# get site list
 
+		commandNum = global_var.TransactionList[transactionNum].getNexCommandNum()
+		commandLock = Lock(global_var.LOCK_TYPE_WRITE,transactionNum,variableNum)
+		commandTmp = Command(2, transactionNum, variableNum, variableValue,commandNum,commandLock)# create command object 
+
+		if 'variableNum' in global_var.VariableSiteList.keys():# check if variable legal, if not change transaction's status to fail directly
+			global_var.TransactionList[transactionNum].status = global_var.TRANSACTION_STATUS_ABORT
+			print("variable not exist, transaction {0} abort.".format(transactionNum))
+			# abort now? 
+		
+		siteList = global_var.VariableSiteList[variableNum]# get site list
 		fail = True
 		for i in siteList:# go through list and checkLock()
-			TNum1, TNum2List, Result = siteList[i].checkLock(transactionNum,commandtype,variableNum)
+			TNum1, TNum2List, Result = global_var.DataManagerList[i].checkLock(transactionNum,variableNum,commandLock)
 			# if result contains wait, change command's status to wait and add edges
-			if TNum1 == project.LOCK_STATUS_WAIT:
+			if TNum1 == global_var.LOCK_STATUS_WAIT:
 				self.__addEdge(transactionNum,TNum2)	
-				commandTmp.status = project.COMMAND_STATUS_WAIT
+				commandTmp.status = global_var.COMMAND_STATUS_WAIT
 				fail = False
 			# if result contains only success or fail and success > 0, change command's status to success
-			elif TNum1 == project.LOCK_STATUS_GRANTED:
-				commandTmp.status = project.COMMAND_STATUS_SUCCESS
+			elif TNum1 == global_var.LOCK_STATUS_GRANTED:
+				commandTmp.status = global_var.COMMAND_STATUS_SUCCESS
 				fail = False
 		if fail:
-			commandTmp.status = project.COMMAND_STATUS_FAIL
-		project.transactionList[transactionNum].commandlist.append(commandTmp)
-
+			commandTmp.status = global_var.COMMAND_STATUS_FAIL
+		global_var.transactionList[transactionNum].addCommand(commandTmp)
 		# deadlock detect
-
+		print("Transaction {0} want to write to variable {1} with value {2} granted? {3}".format(transactionNum,variableNum,variableValue,commandTmp.status))
 		return
 
 	def read(self,transactionNum, variableNum):
@@ -189,7 +203,7 @@ class DataManager(object):
 				self.waitlockTable[iNum] = {}
 
 				self.variables[iNum] = []
-				variableTmp = VariableInSite(iNum,project.VARIABLE_TYPE_REPLICATE)
+				variableTmp = VariableInSite(iNum,global_var.VARIABLE_TYPE_REPLICATE)
 				self.variables[iNum].append(variableTmp)
 			else: 
 				if iNum % 10 + 1 == self.index:
@@ -198,14 +212,14 @@ class DataManager(object):
 					self.waitlockTable[iNum] = {}
 
 					self.variables[iNum] = []
-					variableTmp = VariableInSite(iNum,project.VARIABLE_TYPE_NORMAL)
+					variableTmp = VariableInSite(iNum,global_var.VARIABLE_TYPE_NORMAL)
 					self.variables[iNum].append(variableTmp)
 
 		for vl in self.variables.keys():
 			for v in self.variables[vl]:
 				v.getInfo()
 
-	def checkLock(self,transactionNum, variableNum, locktype):
+	def checkLock(self,transactionNum, variableNum, lock):
 		# get transactionNum
 		# return -1 for site failed, 0 for success, 1 for lock conflict, 
 		# return TNum1 and TNum2 where TNum1 is waiting for TNum2 
@@ -216,11 +230,10 @@ class DataManager(object):
 		if self.status == False:
 			Fail = True # site fail
 		else:
-			if locktype == project.LOCK_TYPE_READ and not self.variables[variableNum].accessible:
+			if locktype == global_var.LOCK_TYPE_READ and not self.variables[variableNum].accessible:
 				Fail = True
 		if not Fail:
-			lockTmp = Lock(locktype,transactionNum)
-			lockResult = lockTmp.lockGranted(self.currentlockTable[variableNum])
+			lockResult = lock.lockGranted(self.currentlockTable[variableNum])
 			if not lockResult:
 				# add lock into waittable
 				self.waitlockTable[variableNum].append(lockTmp)
@@ -232,7 +245,8 @@ class DataManager(object):
 		return TNum1, TNum2List, Fail
 	def removeLock(self,transactionNum, variableNum):
 		# remove lock, change next wait lock's state
-		# remove edge ???? 
+		# remove edge// not needed since the whole vertex will be remove 
+		# return new granted lock for further check
 		removeLockList = []
 		for l in self.currentLockList:
 			if l.transactionNum == transactionNum:
@@ -240,16 +254,18 @@ class DataManager(object):
 		for l in removeLockList:
 			self.currentLockList.remove(l)
 		removeLockList = []
+		newGrantedLock = []
 		for l in self.waitlockTable:
 			lockResult = l.lockGranted(self.currentLockList)
 			if lockResult:
 				removeLockList.append(l) # remove
 				self.currentLockList.append(l) # add to currentLockList
+				newGrantedLock.append(l) # return 
 			else:
 				break
 		for l in removeLockList:
 			self.currentLockList.remove(l)
-		return
+		return newGrantedLock
 	def fail(self):
 		self.state = False 
 		print("site {0} failed".format(self.index))
@@ -264,11 +280,11 @@ class DataManager(object):
 			if l.transactionNum not in transactionList:
 				transactionList.append(l.transactionNum)
 		for t in transactionList:
-			if project.TransactionList[i].status != project.TRANSACTION_STATUS_COMMIT:
-				project.TransactionList[i].status = project.TRANSACTION_STATUS_ABORT
+			if global_var.TransactionList[i].status != global_var.TRANSACTION_STATUS_COMMIT:
+				global_var.TransactionList[i].status = global_var.TRANSACTION_STATUS_ABORT
 		for v in self.variables:
 			# donot remove version 
-			if v.type == project.VARIABLE_TYPE_REPLICATE:
+			if v.type == global_var.VARIABLE_TYPE_REPLICATE:
 				v.notAccessible()
 		self.currentLockList = {}
 		self.waitlockTable = {}
@@ -283,7 +299,7 @@ class DataManager(object):
 			Fail = True
 		vTmpVersion = -1
 		vTmpValue = -1
-		transactionVersion = project.TransactionList[transactionNum].index
+		transactionVersion = global_var.TransactionList[transactionNum].index
 		if not Fail:
 			for vTmp in self.variables[variableNum]:
 				if vTmp.accessible == False:
@@ -299,12 +315,12 @@ class DataManager(object):
 		Fail = False
 		if self.status == False:
 			Fail = True
-		transactionVersion = project.TransactionList[transactionNum].index
+		transactionVersion = global_var.TransactionList[transactionNum].index
 		variabletype = -1
 		if variableNum % 2 == 0:
-			variabletype = project.VARIABLE_TYPE_REPLICATE
+			variabletype = global_var.VARIABLE_TYPE_REPLICATE
 		else:
-			variabletype = project.VARIABLE_TYPE_NORMAL
+			variabletype = global_var.VARIABLE_TYPE_NORMAL
 		if not Fail:
 			variableTmp = VariableInSite(variableNum,variabletype,transactionVersion)
 			self.variables[variableNum].append(variableTmp)
