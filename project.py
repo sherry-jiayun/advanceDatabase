@@ -37,10 +37,17 @@ if __name__ == "__main__":
 	
 	TM = module.TransactionMachine()
 	TM.begin(1)
-	TM.write(1,1,101)
-	global_var.DataManagerList[2].fail()
+	print()
 	TM.begin(2)
-	TM.write(2,1,103)
+	print()
+	TM.write(1,1,101)
+	print()
+	TM.write(2,2,202)
+	print()
+	TM.write(1,2,102)
+	#global_var.DataManagerList[2].fail()
+	print()
+	TM.write(2,1,201)
 	'''while 1:
 		try:
 			line = sys.stdin.readline()
