@@ -264,14 +264,15 @@ class TransactionMachine(object):
 			if commandTmp.status != global_var.COMMAND_STATUS_SUCCESS:
 				validate = False
 				break
-
+				
 		newGrantedLockList = []
-		if validate:						# if safe to commit
+		if validate:
+			# safe to commit
 			for commandNum in global_var.TransactionList[transactionNum].commandlist:
 				commandTmp = global_var.TransactionList[transactionNum].commandlist[commandNum]
 				siteList = global_var.VariableSiteList[commandTmp.variableNum]
 				for s in siteList:
-					if commandTmp.commandtype == 2:		# command is write
+					if commandTmp.commandtype == 2:
 						Fail = global_var.DataManagerList[s].update(commandTmp)
 						# fail may caused by site fail
 					# remove lock
@@ -504,7 +505,7 @@ class DataManager(object):
 		# return -1 when accessible == false, return 1 if success add new version 
 		# change variable's accessible 
 		Fail = False
-		if self.status == False:	# if site is failed
+		if self.status == False:
 			Fail = True
 
 		commandVersion = commandTmp.index
@@ -525,6 +526,3 @@ class DataManager(object):
 
 		
 		
-
-
-
