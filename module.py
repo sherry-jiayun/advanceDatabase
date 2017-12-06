@@ -287,6 +287,8 @@ class TransactionMachine(object):
 		# check all command's status
 		print()
 		validate = True
+		if global_var.TransactionList[transactionNum].status == global_var.TRANSACTION_STATUS_ABORT:
+			validate = False
 		for commandNum in global_var.TransactionList[transactionNum].commandlist:
 			commandTmp = global_var.TransactionList[transactionNum].commandlist[commandNum]
 			if commandTmp.status != global_var.COMMAND_STATUS_SUCCESS:
@@ -344,10 +346,13 @@ class TransactionMachine(object):
 					self.end(t)
 		else:
 			# change status, put in wait list
-			global_var.TransactionList[transactionNum].status = global_var.TRANSACTION_STATUS_WAIT
-			if transactionNum not in self.waitcommittransaction:
-				self.waitcommittransaction.append(transactionNum)
-			print("transaction {0} wait for commit".format(transactionNum))
+			if global_var.TransactionList[transactionNum].status != global_var.TRANSACTION_STATUS_ABORT:
+				global_var.TransactionList[transactionNum].status = global_var.TRANSACTION_STATUS_WAIT
+				if transactionNum not in self.waitcommittransaction:
+					self.waitcommittransaction.append(transactionNum)
+				print("transaction {0} wait for commit".format(transactionNum))
+			else:
+				print("transaction {0} abort".format(transactionNum))
 		return
 
 	def fail(self,datamanagerNum):
@@ -485,6 +490,7 @@ class DataManager(object):
 		# clear lock table, remove lock, change transaction status, change variable's accessible
 		# find all transaction that reach this site
 		transactionList = []
+		print (self.currentlockTable, self.waitlockTable)
 		for variableNum in self.currentlockTable.keys():
 			for l in self.currentlockTable[variableNum]:
 				if l.transactionNum not in transactionList:
@@ -499,6 +505,7 @@ class DataManager(object):
 		for t in transactionList:
 			if global_var.TransactionList[t].status != global_var.TRANSACTION_STATUS_COMMIT:
 				global_var.TransactionList[t].status = global_var.TRANSACTION_STATUS_ABORT
+				print("transaction {0} abort because site {1} recover".format(t,self.index))
 		for variableNum in self.variables.keys():
 			for v in self.variables[variableNum]:
 				if v.type == global_var.VARIABLE_TYPE_REPLICATE:
@@ -536,6 +543,7 @@ class DataManager(object):
 		Fail = False
 		if self.status == False:
 			Fail = True
+
 		commandVersion = commandTmp.index
 		variabletype = -1
 		if commandTmp.variableNum % 2 == 0:
