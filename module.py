@@ -490,7 +490,6 @@ class DataManager(object):
 		# clear lock table, remove lock, change transaction status, change variable's accessible
 		# find all transaction that reach this site
 		transactionList = []
-		print (self.currentlockTable, self.waitlockTable)
 		for variableNum in self.currentlockTable.keys():
 			for l in self.currentlockTable[variableNum]:
 				if l.transactionNum not in transactionList:
