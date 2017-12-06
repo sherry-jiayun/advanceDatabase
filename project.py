@@ -70,13 +70,36 @@ if __name__ == "__main__":
 	TM.endCommand(2)'''
 
 	# Test 3
-	'''TM.beginRO(1)
+	'''TM.begin(1)
+	TM.begin(2)
+	print()
+	TM.readCommand(1,3)
 	print()
 	TM.fail(2)
-	TM.readCommand(1,1)
-	TM.end(1)
 	print()
-	TM.recover(2)'''
+	TM.write(2,8,88)
+	print()
+	TM.readCommand(2,3)
+	print()
+	TM.write(1,5,91)
+	print()
+	TM.endCommand(2)
+	print()
+	TM.recover(2)
+	print()
+	TM.endCommand(1)'''
+
+	# Test 3.5
+	TM.begin(1)
+	TM.begin(2)
+	TM.readCommand(1,3)
+	TM.write(2,8,88)
+	TM.fail(2)
+	TM.readCommand(2,3)
+	TM.write(1,4,91)
+	TM.recover(2)
+	TM.endCommand(2)
+	TM.endCommand(1)
 
 	# TM.deadLock_test()
 
