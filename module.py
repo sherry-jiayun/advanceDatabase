@@ -44,7 +44,7 @@ class VariableInSite(object):
 		print("Variable {0} with type {1} version {2} and value {3} and accessible {4}".format(self.index,self.type,self.version,self.value,self.accessible))
 	def updateValue(self,value):
 		self.value = value
-		_grantedAccessible()
+		self._grantedAccessible()
 		print("variable {0} with type {1} and value {2} updated to version {3}".format(self.index,self.type,self.value,self.version))
 	def _grantedAccessible(self):
 		if self.accessible == False:
@@ -98,17 +98,15 @@ class Transaction(object):
 
 
 class Command(object):
-	def __init__(self, commandtype, transactionNum, variableNum, value, commandNum):
+	def __init__(self, index, commandtype, transactionNum, variableNum, value, commandNum):
+		self.index = index # time stamp
 		self.commandtype = commandtype # 1 for read, 2 for write
 		self.transactionNum = transactionNum 
-		if variableNum % 2 == 0:
-			self.variable = VariableInCommand(variableNum,0,value)
-		else:
-			self.variable = VariableInCommand(variableNum,1,value)
+		self.variableNum = variableNum
 		self.value = value # none for read
 		self.status = global_var.COMMAND_STATUS_INITIALIZE # -1 for initialize, 0 for success, 1 for wait, 2 for fail 
 		self.commandNum = commandNum
-		
+		print("create write command with commandNum {0} in transaction {1}".format(self.commandNum,self.transactionNum))
 	def putLock(self,commandLock):
 		self.commandLock = commandLock
 	def putResult(self,value):
@@ -118,6 +116,7 @@ class TransactionMachine(object):
 	def __init__(self):
 		self.index = 0
 		self.graph = {}
+		self.waitcommittransaction = []
 	def begin(self,transactionNum):
 		# input is the number of transaction
 		transTmp = Transaction(self.index, transactionNum, False)# create transaction
@@ -131,9 +130,8 @@ class TransactionMachine(object):
 	def write(self,transactionNum, variableNum, variableValue):
 
 		commandNum = global_var.TransactionList[transactionNum].getNexCommandNum()
-		commandLock = Lock(global_var.LOCK_TYPE_WRITE,transactionNum,variableNum)
-		commandTmp = Command(2, transactionNum, variableNum, variableValue,commandNum)# create command object 
-
+		commandLock = Lock(global_var.LOCK_TYPE_WRITE,transactionNum,commandNum)
+		commandTmp = Command(self.index, 2, transactionNum, variableNum, variableValue,commandNum)# create command object 
 		if 'variableNum' in global_var.VariableSiteList.keys():# check if variable legal, if not change transaction's status to fail directly
 			global_var.TransactionList[transactionNum].status = global_var.TRANSACTION_STATUS_ABORT
 			print("variable not exist, transaction {0} abort.".format(transactionNum))
@@ -196,6 +194,7 @@ class TransactionMachine(object):
 			print("but situation happend because unconsistent")
 		
 		global_var.TransactionList[transactionNum].addCommand(commandTmp)
+		self.index = self.index + 1
 		# deadlock detect
 		print("Transaction {0} want to write to variable {1} with value {2} granted? {3}".format(transactionNum,variableNum,variableValue,commandLock.status))
 		return
@@ -205,8 +204,8 @@ class TransactionMachine(object):
 		# check if variable legal, if not change transaction's status to fail directly
 		# get site list
 		commandNum = global_var.TransactionList[transactionNum].getNexCommandNum()
-		commandLock = Lock(global_var.LOCK_TYPE_READ,transactionNum,variableNum)
-		commandTmp = Command(1, transactionNum, variableNum, -1,commandNum)# create command object 
+		commandLock = Lock(global_var.LOCK_TYPE_READ,transactionNum,commandNum)
+		commandTmp = Command(self.index, 1, transactionNum, variableNum, -1,commandNum)# create command object 
 
 		if 'variableNum' in global_var.VariableSiteList.keys():# check if variable legal, if not change transaction's status to fail directly
 			global_var.TransactionList[transactionNum].status = global_var.TRANSACTION_STATUS_ABORT
@@ -225,7 +224,7 @@ class TransactionMachine(object):
 			if not Fail and len(TNum2List) <= 0:
 				# not fail and wait no transaction
 				result_success = True
-				readResultTmp,readResultFail = global_var.DataManagerList[i].getValue(variableNum,transactionNum)
+				readResultTmp,readResultFail = global_var.DataManagerList[i].getValue(variableNum,commandTmp.index)
 				if not readResultFail: 
 					# may caused because site just recover and unaccisable 
 					readResult = readResultTmp
@@ -280,11 +279,76 @@ class TransactionMachine(object):
 			print("but situation happend because unconsistent")
 		
 		global_var.TransactionList[transactionNum].addCommand(commandTmp)
+		self.index = self.index + 1
 		# deadlock detect
 		print("Transaction {0} want to read to variable {1} with value {2} granted? {3}".format(transactionNum,variableNum,commandTmp.value,commandLock.status))
 		return
 
 	def end(self,transactionNum):
+		# check all command's status
+		print()
+		validate = True
+		for commandNum in global_var.TransactionList[transactionNum].commandlist:
+			commandTmp = global_var.TransactionList[transactionNum].commandlist[commandNum]
+			if commandTmp.status != global_var.COMMAND_STATUS_SUCCESS:
+				validate = False
+				break
+		newGrantedLockList = []
+		if validate:
+			# safe to commit
+			for commandNum in global_var.TransactionList[transactionNum].commandlist:
+				commandTmp = global_var.TransactionList[transactionNum].commandlist[commandNum]
+				siteList = global_var.VariableSiteList[commandTmp.variableNum]
+				for s in siteList:
+					if commandTmp.commandtype == 2:
+						Fail = global_var.DataManagerList[s].update(commandTmp)
+						# fail may caused by site fail
+					# remove lock
+					newGrantedLock = global_var.DataManagerList[s].removeLock(transactionNum,commandTmp.variableNum,commandTmp.commandLock)
+					for l in newGrantedLock:
+						if l not in newGrantedLockList:
+							newGrantedLockList.append(l)
+			global_var.TransactionList[transactionNum].status = global_var.TRANSACTION_STATUS_COMMIT
+			if transactionNum in self.waitcommittransaction:
+				self.waitcommittransaction.remove(transactionNum)
+			# remove edge from list 
+			self.__deleteVertex(transactionNum)
+			print("transaction {0} commit".format(transactionNum))
+
+			newChangedTransaction = []
+			for l in newGrantedLockList:
+				# find command by lock
+				commandTmp = global_var.TransactionList[l.transactionNum].commandlist[l.commandNum]
+				if commandTmp.commandtype == 1:
+					# read 
+					readResult = -1
+					siteList = global_var.VariableSiteList[commandTmp.variableNum]
+					for s in siteList:
+						readResultTmp,readResultFail = global_var.DataManagerList[s].getValue(commandTmp.variableNum,commandTmp.index)
+						if not readResultFail: 
+							# may caused because site just recover and unaccisable 
+							readResult = readResultTmp
+					if commandTmp.variableNum in global_var.TransactionList[transactionNum].currentVariableValue.keys():
+						# may caused by write command in same transaction
+						readResult = global_var.TransactionList[transactionNum].currentVariableValue[commandTmp.variableNum]
+					commandTmp.putResult(readResult)
+					print("read command {0} in transaction {1} success read variable {2} with value {3}".format(commandTmp.commandNum,commandTmp.transactionNum,commandTmp.variableNum,commandTmp.value))
+				else:
+					global_var.TransactionList[commandTmp.transactionNum].currentVariableValue[commandTmp.variableNum] = commandTmp.value
+					print("write command {0} in transaction {1} success read variable {2} with value {3}".format(commandTmp.commandNum,commandTmp.transactionNum,commandTmp.variableNum,commandTmp.value))
+				commandTmp.status = global_var.COMMAND_STATUS_SUCCESS
+				
+				if l.transactionNum not in newChangedTransaction:
+					newChangedTransaction.append(l.transactionNum)
+			for t in newChangedTransaction:
+				if t in self.waitcommittransaction:
+					self.end(t)
+		else:
+			# change status, put in wait list
+			global_var.TransactionList[transactionNum].status = global_var.TRANSACTION_STATUS_WAIT
+			if transactionNum not in self.waitcommittransaction:
+				self.waitcommittransaction.append(transactionNum)
+			print("transaction {0} wait for commit".format(transactionNum))
 		return
 
 	def fail(self,datamanagerNum):
@@ -318,7 +382,12 @@ class TransactionMachine(object):
 				self.graph[transactionNum1].append(i)
 		print("current graph {}".format(self.graph))
 		return
-	def __deleteVertex(self):
+	def __deleteVertex(self,transactionNum):
+		self.graph.pop(transactionNum,None)
+		for key in self.graph.keys():
+			if transactionNum in self.graph[key]:
+				self.graph[key].remove(transactionNum)
+		print("current graph {}".format(self.graph))
 		return
 	def __deadLock(self):
 		return true
@@ -385,28 +454,29 @@ class DataManager(object):
 			# lock.status = global_var.LOCK_STATUS_FAIL
 			print("{0} lock for variable {1} from transaction {2} site failed".format(lock.locktype,variableNum,transactionNum))
 		return TNum1, TNum2List, Fail
-	def removeLock(self,transactionNum, variableNum):
+	def removeLock(self,transactionNum, variableNum, lock):
 		# remove lock, change next wait lock's state
 		# remove edge// not needed since the whole vertex will be remove 
 		# return new granted lock for further check
 		removeLockList = []
-		for l in self.currentLockList:
-			if l.transactionNum == transactionNum:
+		for l in self.currentlockTable[variableNum]:
+			if l == lock:
 				removeLockList.append(l)
 		for l in removeLockList:
-			self.currentLockList.remove(l)
+			self.currentlockTable[variableNum].remove(l)
 		removeLockList = []
 		newGrantedLock = []
-		for l in self.waitlockTable:
-			lockResult = l.lockGranted(self.currentLockList)
+		for l in self.waitlockTable[variableNum]:
+			lockResult = l.lockGranted(self.currentlockTable[variableNum])
 			if lockResult:
 				removeLockList.append(l) # remove
-				self.currentLockList.append(l) # add to currentLockList
+				self.currentlockTable[variableNum].append(l) # add to currentlocktable
 				newGrantedLock.append(l) # return 
+				print("{0} lock for command {1} in transaction {2} granted".format(l.locktype,l.commandNum,l.transactionNum))
 			else:
 				break
 		for l in removeLockList:
-			self.currentLockList.remove(l)
+			self.waitlockTable[variableNum].remove(l)
 		return newGrantedLock
 	def fail(self):
 		self.status = False 
@@ -415,7 +485,7 @@ class DataManager(object):
 	def recover(self):
 		# clear lock table, remove lock, change transaction status, change variable's accessible
 		transactionList = []
-		for l in currentLockList:
+		for l in currentlockTable:
 			if l.transactionNum not in transactionList:
 				transactionList.append(l.transactionNum)
 		for l in waitlockTable:
@@ -428,11 +498,11 @@ class DataManager(object):
 			# donot remove version 
 			if v.type == global_var.VARIABLE_TYPE_REPLICATE:
 				v.notAccessible()
-		self.currentLockList = {}
+		self.currentlockTable = {}
 		self.waitlockTable = {}
 		self.status = True
 		return
-	def getValue(self,variableNum,transactionNum):
+	def getValue(self,variableNum,commandVersion):
 		# return -1 when accessible == false, return value if transactionType is not readOnly
 		# return the latest version which version less than transactionVersion
 		# if not 
@@ -442,37 +512,38 @@ class DataManager(object):
 			Fail = True
 		vTmpVersion = -1
 		vTmpValue = -1
-		transactionVersion = global_var.TransactionList[transactionNum].index
 		if not Fail:
 			for vTmp in self.variables[variableNum]:
 				if vTmp.accessible == False:
-					print("cannot get value for variable {0} for transaction {1} because variables in site {2} unaccisable.".format(variableNum,transactionNum,self.index))
+					print("cannot get value for variable {0} because variables in site {1} unaccisable.".format(variableNum,self.index))
 					Fail = True
 					break
-				if vTmp.version > vTmpVersion and vTmp.version <= transactionVersion:
+				if vTmp.version > vTmpVersion and vTmp.version <= commandVersion:
 					vTmpValue = vTmp.value
-					vTmpVersion = transactionVersion
+					vTmpVersion = vTmp.version
 				elif vTmp.version > vTmpVersion:
-					print("transaction {0} access later version {1} with current version {2}".format(transactionNum,vTmp.version,transactionVersion))
+					print("command version{0} access later version {1} with current version {2}".format(commandVersion,vTmp.version,transactionVersion))
 		if not Fail:
-			print("transaction {0} with current version {1} read variable {2} version {3} value {4}".format(transactionNum,transactionVersion,variableNum,vTmpVersion,vTmpValue))
+			print("command with current version {0} read variable {1} version {2} value {3}".format(commandVersion,variableNum,vTmpVersion,vTmpValue))
 		return vTmpValue, Fail
-	def update(self,variableNum,value,transactionNum):
+	def update(self,commandTmp):
 		# return -1 when accessible == false, return 1 if success add new version 
 		# change variable's accessible 
 		Fail = False
 		if self.status == False:
 			Fail = True
-		transactionVersion = global_var.TransactionList[transactionNum].index
+		commandVersion = commandTmp.index
 		variabletype = -1
-		if variableNum % 2 == 0:
+		if commandTmp.variableNum % 2 == 0:
 			variabletype = global_var.VARIABLE_TYPE_REPLICATE
 		else:
 			variabletype = global_var.VARIABLE_TYPE_NORMAL
 		if not Fail:
-			variableTmp = VariableInSite(variableNum,variabletype,transactionVersion)
-			self.variables[variableNum].append(variableTmp)
-			for v in self.variables[variableNum]:
+			variableTmp = VariableInSite(commandTmp.variableNum,variabletype,commandVersion)
+			variableTmp.updateValue(commandTmp.value)
+			print("site {0} update variable {1} to version {2} with value {3}".format(self.index,commandTmp.variableNum,commandVersion,commandTmp.value))
+			self.variables[commandTmp.variableNum].append(variableTmp)
+			for v in self.variables[commandTmp.variableNum]:
 				if v.accessible == False:
 					v.accessible = True
 		return Fail
