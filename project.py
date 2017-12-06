@@ -36,24 +36,60 @@ if __name__ == "__main__":
 		print()
 	
 	TM = module.TransactionMachine()
-	TM.begin(1)
+	# Test 1
+	'''TM.begin(1)
 	TM.begin(2)
 	print()
-	TM.read(1,3)
+
+	TM.write(1,1,101)
 	print()
-	TM.write(2,8,88)
+	TM.write(2,2,202)
+	print()
+	TM.write(1,2,102)
+	print()
+	TM.write(2,1,201)
+	print()
+	TM.abort_test(1)
+	TM.endCommand(1)'''
+
+	# Test 2
+	'''TM.begin(1)
+	TM.beginRO(2)
+	print()
+
+	TM.write(1,1,101)
+	print()
+	TM.readCommand(2,2)
+	print()
+	TM.write(1,2,102)
+	print()
+	TM.readCommand(2,1)
+	print()
+
+	TM.endCommand(1)
+	TM.endCommand(2)'''
+
+	# Test 3
+	'''TM.beginRO(1)
+	print()
+	TM.fail(2)
+	TM.readCommand(1,1)
+	TM.end(1)
+	print()
+	TM.recover(2)'''
+
+	# TM.deadLock_test()
+
+	# Test 4 
+	TM.beginRO(1)
 	print()
 	TM.fail(2)
 	print()
-	TM.read(2,3)
+	TM.readCommand(1,1)
 	print()
-	TM.write(1,5,91)
-	print()
-	TM.recover(2)
-	print()
-	TM.end(2)
-	print()
-	TM.end(1)
+	TM.readCommand(1,1)
+
+
 	#TM.read(1,1)
 	'''TM.write(2,2,202)
 	print()
