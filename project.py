@@ -37,6 +37,20 @@ if __name__ == "__main__":
 	
 	TM = module.TransactionMachine()
 	# Test 1
+	'''TM.begin(1)
+	TM.begin(2)
+	print()
+	TM.write(1,1,101)
+	print()
+	TM.write(2,2,202)
+	print()
+	TM.write(1,2,102)
+	print()
+	TM.write(2,1,201)
+	print()
+	TM.endCommand(1)
+	print()
+	TM.dumpCommand()'''
 
 	# Test 2
 	'''TM.begin(1)
@@ -53,7 +67,9 @@ if __name__ == "__main__":
 	print()
 
 	TM.endCommand(1)
-	TM.endCommand(2)'''
+	TM.endCommand(2)
+	print()
+	TM.dumpCommand()'''
 
 	# Test 3
 	'''TM.begin(1)
@@ -78,13 +94,21 @@ if __name__ == "__main__":
 	# Test 3.5
 	'''TM.begin(1)
 	TM.begin(2)
+	print()
 	TM.readCommand(1,3)
+	print()
 	TM.write(2,8,88)
+	print()
 	TM.fail(2)
+	print()
 	TM.readCommand(2,3)
+	print()
 	TM.write(1,4,91)
+	print()
 	TM.recover(2)
+	print()
 	TM.endCommand(2)
+	print()
 	TM.endCommand(1)'''
 
 	# TM.deadLock_test()
@@ -434,36 +458,256 @@ if __name__ == "__main__":
 	print()
 	TM.endCommand(1)'''
 
-	#TM.read(1,1)
-	'''TM.write(2,2,202)
+	# Test 20 more than one cycle
+
+	'''TM.begin(2)
+	TM.begin(4)
+	TM.begin(1)
+	TM.begin(3)
 	print()
-	TM.write(1,2,102)
-	#global_var.DataManagerList[2].fail()
+	TM.readCommand(2,2)
 	print()
-	TM.write(2,1,201)'''
-	'''while 1:
-		try:
-			line = sys.stdin.readline()
-		except KeyboardInterrupt:
-			break
-		if not line:
-			break
-		command = re.search('(([a-zA-Z]+))',line).group(0) if re.search('([a-zA-Z]+)',line) else 'NONE'
-		transactionNum = re.search('T([0-9]+)',line).group(1) if re.search('T([0-9]+)',line) else 'NONE'
-		variableNum = re.search('[x]([0-9]+)',line).group(1) if re.search('[x]([0-9]+)',line) else 'NONE'
-		if variableNum != 'NONE':
-			variableNum = int(variableNum)
+	TM.readCommand(2,5)
+	print()
+	TM.readCommand(1,1)
+	print()
+	TM.readCommand(3,3)
+	print()
+	TM.readCommand(4,4)
+	print()
+	TM.write(1,2,21)
+	print()
+	TM.write(3,5,53)
+	print()
+	TM.write(4,1,14)
+	print()
+	TM.write(4,3,34)
+	print()
+	TM.write(2,4,42)
+	print()
+	TM.endCommand(4)
+	print()
+	TM.endCommand(2)
+	print()
+	TM.dumpCommand()'''
 
-		siteNumFirst = re.search('[(]([0-9]+)[)]',line).group(0) if re.search('[(]([0-9]+)[)]',line) else 'NONE'
-		siteNum = re.search('([0-9]+)',siteNumFirst).group(0) if re.search('([0-9]+)',siteNumFirst) else 'NONE'
+	# Test 21 nothing special
+	'''TM.begin(1)
+	TM.begin(2)
+	print()
+	TM.readCommand(1,1)
+	print()
+	TM.readCommand(2,1)
+	print()
+	TM.write(2,1,22)
+	print()
+	TM.endCommand(1)
+	print()
+	TM.endCommand(2)
+	print()
+	TM.dumpCommand()'''
 
-		valueFirst = re.search('[,]([0-9]+)[)]',line).group(0) if re.search('[,]([0-9]+)[)]',line) else 'NONE'
-		value = re.search('([0-9]+)',valueFirst).group(0) if re.search('([0-9]+)',valueFirst) else 'NONE'
-		print("Command {0} for tansaction {1} or site {2} for variable {3} with value {4}".format(command,transactionNum,siteNum,variableNum,value))
+	# Test 22 wait until recover
 
-		if 'begin' in command:
-			TM.begin(transactionNum)
-		if 'W' in command:
-			TM.write(transactionNum,variableNum,value)
+	'''TM.beginRO(1)
+	TM.begin(2)
+	TM.begin(3)
+	print()
+	TM.write(3,3,33)
+	print()
+	TM.endCommand(3)
+	TM.fail(4)
+	TM.readCommand(1,3)
+	TM.readCommand(2,3)
+	TM.recover(4)
+	TM.endCommand(1)
+	TM.endCommand(2)'''
 
-	print("get main.")'''
+	# Test 23 find youngest transaction in cycle
+	'''TM.begin(1)
+	TM.begin(2)
+	TM.begin(3)
+	TM.begin(4)
+	print()
+	TM.readCommand(1,1)
+	print()
+	TM.readCommand(2,2)
+	print()
+	TM.readCommand(3,3)
+	print()
+	TM.readCommand(3,5)
+	print()
+	TM.write(4,3,40)
+	print()
+	TM.write(3,1,30)
+	print()
+	TM.write(1,2,10)
+	print()
+	TM.write(2,5,20)
+	print()
+	TM.endCommand(4)
+	print()
+	TM.endCommand(2)
+	print()
+	TM.endCommand(1)'''
+
+	# Test 24 readOnly transaction return immediately after site recover but normal transaction need to wait until next write commit for replicate variable
+	'''TM.fail(1)
+	TM.fail(2)
+	TM.fail(3)
+	TM.fail(4)
+	TM.fail(5)
+	TM.fail(6)
+	TM.fail(7)
+	TM.fail(8)
+	TM.fail(9)
+	TM.fail(10)
+	print()
+	TM.begin(1)
+	TM.begin(2)
+	TM.beginRO(3)
+	TM.begin(4)
+	print()
+	TM.readCommand(1,3)
+	print()
+	TM.readCommand(2,4)
+	print()
+	TM.readCommand(3,4)
+	print()
+	TM.recover(4)
+	print()
+	TM.write(4,4,44)
+	print()
+	TM.endCommand(1)
+	print()
+	TM.endCommand(4)
+	print()
+	TM.endCommand(2)
+	print()
+	TM.endCommand(3)'''
+
+	# Test sequential
+	'''TM.begin(1)
+	print()
+	TM.fail(2)
+	print()
+	TM.fail(4)
+	print()
+	TM.readCommand(1,1)
+	print()
+	TM.readCommand(1,3)
+	print()
+	TM.endCommand(1)
+	print()
+	TM.recover(2)
+	print()
+	TM.recover(4)'''
+
+	# Test after recover
+	'''TM.begin(1)
+	print()
+	TM.readCommand(1,2)
+	print()
+	TM.fail(2)
+	print()
+	TM.recover(2)
+	print()
+	TM.endCommand(1)'''
+	check = True
+	if len(sys.argv) < 2:
+		print('no input file found')
+		check = False
+	if len(sys.argv) > 2:
+		print('more than one input file found')
+		check = False
+	if check:
+		inputFile = sys.argv[1]
+		with open(inputFile,'r') as inFile:
+			for line in inFile:
+				# print(line)
+				command = re.search('(([a-zA-Z]+))',line).group(0) if re.search('([a-zA-Z]+)',line) else 'NONE'
+				transactionNum = re.search('T([0-9]+)',line).group(1) if re.search('T([0-9]+)',line) else 'NONE'
+				variableNum = re.search('[x]([0-9]+)',line).group(1) if re.search('[x]([0-9]+)',line) else 'NONE'
+
+				siteNumFirst = re.search('[(]([0-9]+)[)]',line).group(0) if re.search('[(]([0-9]+)[)]',line) else 'NONE'
+				siteNum = re.search('([0-9]+)',siteNumFirst).group(0) if re.search('([0-9]+)',siteNumFirst) else 'NONE'
+
+				valueFirst = re.search('[,]([0-9]+)[)]',line).group(0) if re.search('[,]([0-9]+)[)]',line) else 'NONE'
+				value = re.search('([0-9]+)',valueFirst).group(0) if re.search('([0-9]+)',valueFirst) else 'NONE'
+				# print(valueFirst,value)
+				# print("Command {0} for tansaction {1} or site {2} for variable {3} with value {4}".format(command,transactionNum,siteNum,variableNum,value))
+
+				if 'begin' in command:
+					if transactionNum != 'NONE':
+						tNum = int(transactionNum)
+						if tNum not in global_var.TransactionList.keys():
+							TM.begin(tNum)
+						else:
+							print("Transaction {} already exist.".format(tNum))
+					else:
+						print("Please enter transactionNum.")
+				if 'W' in command:
+					if transactionNum != 'NONE' and variableNum != 'NONE' and value != 'NONE':
+						tNum = int(transactionNum)
+						vNum = int(variableNum)
+						valueNum = int(value)
+						if tNum in global_var.TransactionList.keys():
+							TM.write(tNum,vNum,valueNum)
+						else:
+							print("Command denied because transaction {} doesn't exist".format(tNum))
+					else:
+						print("Please enter transaction number/variable number/value")
+				if 'R' in command:
+					if transactionNum != 'NONE' and variableNum != 'NONE':
+						tNum = int(transactionNum)
+						rNum = int(variableNum)
+						if tNum in global_var.TransactionList.keys():
+							TM.readCommand(tNum,rNum)
+						else:
+							print("Command denied because transaction {} doesn't exist".format(tNum))
+					else:
+						print("Please enter transaction number/variable number")
+				if 'end' in command:
+					if transactionNum != 'NONE':
+						tNum = int(transactionNum)
+						if tNum in global_var.TransactionList.keys():
+							TM.end(tNum)
+						else:
+							print("Transaction {} not exist.".format(tNum))
+					else:
+						print("Please enter transactionNum.")
+				if 'fail' in command:
+					if siteNum != 'NONE':
+						sNum = int(siteNum)
+						if sNum in global_var.DataManagerList.keys():
+							TM.fail(sNum)
+						else:
+							print("Site {} not exist".format(sNum))
+					else:
+						print("Please enter site number.")
+				if 'recover' in command:
+					if siteNum != 'NONE':
+						sNum = int(siteNum)
+						if sNum in global_var.DataManagerList.keys():
+							TM.recover(sNum)
+						else:
+							print("Site {} not exist".format(sNum))
+					else:
+						print("Please enter site number.")
+				if 'dump' in command:
+					if siteNum == 'NONE' and variableNum == 'NONE':
+						TM.dumpCommand()
+					elif siteNum != 'NONE' and variableNum == 'NONE':
+						sNum = int(siteNum)
+						if sNum in global_var.DataManagerList.keys():
+							TM.dumpCommand(sNum,-1)
+						else:
+							print("Site {} not exist".format(sNum))
+					elif siteNum == 'NONE' and variableNum != 'NONE':
+						vNum = int(variableNum)
+						if vNum in global_var.VariableSiteList.keys():
+							TM.dumpCommand(-1,vNum)
+						else:
+							print("variable {} not exist".format(vNum))
+					else:
+						print("command not recognize.")
