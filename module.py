@@ -44,7 +44,7 @@ class VariableInSite(object):
 	def updateValue(self,value):
 		self.value = value
 		self._grantedAccessible()
-		print("variable {0} with type {1} and value {2} updated to version {3}".format(self.index,self.type,self.value,self.version))
+		# print("variable {0} with type {1} and value {2} updated to version {3}".format(self.index,self.type,self.value,self.version))
 	def _grantedAccessible(self):
 		if self.accessible == False:
 			self.accessible = True
@@ -106,6 +106,7 @@ class Command(object):
 		self.value = value # none for read
 		self.status = global_var.COMMAND_STATUS_INITIALIZE # -1 for initialize, 0 for success, 1 for wait, 2 for fail 
 		self.commandNum = commandNum
+		# self.lockNumRequired = lockNumRequired
 		print("create write command with commandNum {0} in transaction {1}".format(self.commandNum,self.transactionNum))
 	def putLock(self,commandLock):
 		self.commandLock = commandLock
@@ -135,6 +136,9 @@ class TransactionMachine(object):
 		commandLock = Lock(global_var.LOCK_TYPE_WRITE,transactionNum,commandNum)					# create a lock 
 		commandTmp = Command(self.index, 2, transactionNum, variableNum, variableValue,commandNum)	# create command object
 
+		if global_var.TransactionList[transactionNum].status == global_var.TRANSACTION_STATUS_ABORT:
+			print("transaction {0} abort and will not execute any command".format(transactionNum))
+			return
 		
 		siteList = global_var.VariableSiteList[variableNum]			# get site list
 		result_success = False
@@ -180,7 +184,9 @@ class TransactionMachine(object):
 			commandTmp.status = global_var.COMMAND_STATUS_WAIT
 			print("lock check wait because all sites failed")
 		else:
-			print("this situation happened because inconsistent")
+			commandTmp.putLock(commandLock)
+			commandTmp.status = global_var.COMMAND_STATUS_WAIT
+			print("this situation happened because inconsistent but wait")
 	
 		global_var.TransactionList[transactionNum].addCommand(commandTmp)
 
@@ -337,6 +343,7 @@ class TransactionMachine(object):
 	def end(self,transactionNum):
 		# check all command's status
 		print()
+
 		validate = True
 		if global_var.TransactionList[transactionNum].status == global_var.TRANSACTION_STATUS_ABORT:
 			validate = False
@@ -489,8 +496,8 @@ class TransactionMachine(object):
 		self.__abort(transactionNum)
 	def __abort(self,transactionNum):
 		# call when abort happend 
-		print()
-		print("transaction {0} abort".format(transactionNum))
+		# print()
+		# print("transaction {0} abort".format(transactionNum))
 		newGrantedLockList = []
 		for commandNum in global_var.TransactionList[transactionNum].commandlist:
 			commandTmp = global_var.TransactionList[transactionNum].commandlist[commandNum]
@@ -539,6 +546,8 @@ class TransactionMachine(object):
 		self.graph[transactionNum] = []
 		return
 	def __addEdge(self,transactionNum1,transactionNum2):
+		print(transactionNum1,transactionNum2)
+		print(self.graph)
 		for i in transactionNum2:
 			if i not in self.graph[transactionNum1]:
 				self.graph[transactionNum1].append(i)
@@ -552,23 +561,22 @@ class TransactionMachine(object):
 		print("current graph {}".format(self.graph))
 		return
 	def deadLock_test(self):
-		self.graph[1] = [2]
-		self.graph[2] = [3]
-		self.graph[3] = [4]
-		self.graph[4] = [1]
+		self.graph[1] = []
+		self.graph[2] = []
+		self.graph[3] = [2]
 		print (self.__isCyclic())
 		print (self.cycleTransaction)
 	def __deadLock(self):
 		self.cycleTransaction = []
-		print()
 		cycle = self.__isCyclic()
-		print(self.cycleTransaction)
 		youngest = None
 		for t in self.cycleTransaction:
 			if youngest == None or global_var.TransactionList[youngest].index < global_var.TransactionList[t].index:
 				youngest = t
-		print ("youngest transaction {}".format(youngest))
 		if cycle and youngest != None:
+			print()
+			print(self.cycleTransaction)
+			print ("youngest transaction {}".format(youngest))
 			self.__abort(youngest)
 		return
 	# A recursive function that uses visited[] and parent to detect
@@ -577,6 +585,7 @@ class TransactionMachine(object):
 		#Mark the current node as visited 
 		visited[v]= True
 		recStack[v] = True
+		# print("visited {}".format(v))
 		#Recur for all the vertices adjacent to this vertex
 		for neighbour in self.graph[v]:
 			# If the node is not visited then recurse on it
@@ -586,14 +595,15 @@ class TransactionMachine(object):
 					return True
 			# If an adjacent vertex is visited and not parent of current vertex,
 			# then there is a cycle
-			elif recStack[v] == True:
+			elif recStack[neighbour] == True:
 				self.cycleTransaction.append(v)
+				# print ("recStack {}".format(v))
 				return True
 		recStack[v] = False
 		return False
 	def __isCyclic(self):
 		# Mark all the vertices as not visited
-		print(self.graph)
+		# print(self.graph)
 		visited ={}
 		recStack = {}
 		for key in self.graph.keys():
@@ -655,7 +665,7 @@ class DataManager(object):
 			if not lockResult:													# need to wait for lock
 				self.waitlockTable[variableNum].append(lock)					# add lock into wait table
 				for l in self.currentlockTable[variableNum]:					
-					if l.transactionNum not in TNum2List:						# add the current locked transactionNum to wait for list
+					if l.transactionNum not in TNum2List and l.transactionNum != transactionNum:						# add the current locked transactionNum to wait for list
 						TNum2List.append(l.transactionNum)
 				print("{0} lock for variable {1} from transaction {2} wait for transaction {3}".format(lock.locktype,variableNum,transactionNum,TNum2List))
 			else:																# grant lock
@@ -734,7 +744,7 @@ class DataManager(object):
 					vTmpValue = vTmp.value
 					vTmpVersion = vTmp.version
 				elif vTmp.version > vTmpVersion:									
-					print("command version{0} access later version {1} with current version {2}".format(commandVersion,vTmp.version,transactionVersion))
+					print("command version{0} access later version {1} with current version {2}".format(commandVersion,vTmp.version,commandVersion))
 		if not Fail:
 			print("command with current version {0} read variable {1} version {2} value {3}".format(commandVersion,variableNum,vTmpVersion,vTmpValue))
 		return vTmpValue, Fail
