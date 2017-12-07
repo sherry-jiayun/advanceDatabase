@@ -1,5 +1,7 @@
+from __future__ import print_function
 import project 
 import status as global_var
+
 
 '''
 # global state 
