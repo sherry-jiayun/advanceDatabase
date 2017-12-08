@@ -638,20 +638,15 @@ if __name__ == "__main__":
 				# print(valueFirst,value)
 				# print("Command {0} for tansaction {1} or site {2} for variable {3} with value {4}".format(command,transactionNum,siteNum,variableNum,value))
 
-				if 'beginRO' in command:
+
+				if 'begin' in command:
 					if transactionNum != 'NONE':
 						tNum = int(transactionNum)
 						if tNum not in global_var.TransactionList.keys():
-							TM.beginRO(tNum)
-						else:
-							print("Error: Transaction {} already exist.".format(tNum))
-					else:
-						print("Error: Please enter transactionNum.")
-				elif 'begin' in command:
-					if transactionNum != 'NONE':
-						tNum = int(transactionNum)
-						if tNum not in global_var.TransactionList.keys():
-							TM.begin(tNum)
+							if 'beginRO' in command:
+								TM.beginRO(tNum)
+							else:
+								TM.begin(tNum)
 						else:
 							print("Error: Transaction {} already exist.".format(tNum))
 					else:
@@ -668,7 +663,7 @@ if __name__ == "__main__":
 							print("Error: Command denied because transaction {} doesn't exist".format(tNum))
 					else:
 						print("Error: Please enter transaction number/variable number/value")
-				if 'R' in command:
+				if 'R' in command and 'beginRO' not in command:
 					if transactionNum != 'NONE' and variableNum != 'NONE':
 						tNum = int(transactionNum)
 						rNum = int(variableNum)
@@ -682,7 +677,7 @@ if __name__ == "__main__":
 					if transactionNum != 'NONE':
 						tNum = int(transactionNum)
 						if tNum in global_var.TransactionList.keys():
-							TM.end(tNum)
+							TM.endCommand(tNum)
 						else:
 							print("Error: Transaction {} not exist.".format(tNum))
 					else:
