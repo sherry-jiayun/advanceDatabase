@@ -52,7 +52,7 @@ class VariableInSite(object):
 			self.accessible = True
 			print("variable {0} is accessible".format(self.index))
 	def getInfo(self):
-		print("x{0}.{1} = {2}\t".format(self.index,self.version,self.value),end="")
+		print("x{0} version {1} = {2}\t".format(self.index,self.version,self.value),end="")
 
 class VariableInCommand(object):
 	def __init__(self, index, variabletype, value):
