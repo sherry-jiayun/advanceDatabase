@@ -116,7 +116,11 @@ class Command(object):
 		self.value = value # none for read
 		self.status = global_var.COMMAND_STATUS_INITIALIZE # -1 for initialize, 0 for success, 1 for wait, 2 for fail 
 		self.commandNum = commandNum
-		# self.lockNumRequired = lockNumRequired
+		self.lockGrantedNum = 0
+		if variableNum % 2 == 0:
+			self.lockRequiredNum = 10 
+		else:
+			self.lockRequiredNum = 1
 		if(self.commandtype == 1):
 			print("Transaction {0} : create read command with commandNum {1}".format(self.transactionNum, self.commandNum))
 		else:
@@ -171,12 +175,14 @@ class TransactionMachine(object):
 
 			if not Fail and len(TNum2List) <= 0:					#if success(not fail and no wait)
 				result_success = True
+				commandTmp.lockGrantedNum = commandTmp.lockGrantedNum + 1
 			if not Fail and len(TNum2List) > 0:						# if not fail but wait for lock
 				self.__addEdge(transactionNum,TNum2List) 			# add edge in graph
 				result_wait = True
 			if Fail:												# if fail to get lock
 				result_fail = True
-
+				commandTmp.lockRequiredNum = commandTmp.lockRequiredNum - 1
+		print (commandLock)
 		if result_success and not result_wait and not result_fail:  # If success in all site in siteList
 			commandTmp.putLock(commandLock)
 			global_var.TransactionList[transactionNum].currentVariableValue[variableNum] = variableValue # add variable to transaction
@@ -267,7 +273,6 @@ class TransactionMachine(object):
 				break
 			else:
 				result_fail = True
-		print(result_success,result_wait,result_fail)
 		if result_success and not result_wait and not result_fail:
 			# get the latest version of 
 			commandTmp.putResult(readResult)
@@ -433,17 +438,22 @@ class TransactionMachine(object):
 			for commandNum in global_var.TransactionList[transactionNum].commandlist:
 				commandTmp = global_var.TransactionList[transactionNum].commandlist[commandNum]
 				siteList = global_var.VariableSiteList[commandTmp.variableNum]
+				lockTmp = commandTmp.commandLock
 				for s in siteList:
 					if commandTmp.commandtype == 2:
 						Fail = global_var.DataManagerList[s].update(commandTmp)
 						# fail may caused by site fail
 						if self.lastCommitedVersion < commandTmp.index:
 							self.lastCommitedVersion = commandTmp.index
-							print("last commited version",self.lastCommitedVersion)
 					# remove lock
 					newGrantedLock = global_var.DataManagerList[s].removeLock(transactionNum,commandTmp.variableNum,commandTmp.commandLock)
 					for l in newGrantedLock:
-						if l not in newGrantedLockList:
+						commandT = global_var.TransactionList[l.transactionNum].commandlist[l.commandNum]
+						if commandT.commandtype == 2:
+							commandT.lockGrantedNum = commandT.lockGrantedNum + 1
+							if commandT.lockGrantedNum == commandT.lockRequiredNum and l not in newGrantedLockList:
+								newGrantedLockList.append(l)
+						elif commandT.commandtype == 1 and l not in newGrantedLockList:
 							newGrantedLockList.append(l)
 			global_var.TransactionList[transactionNum].status = global_var.TRANSACTION_STATUS_COMMIT
 			if transactionNum in self.waitcommittransaction:
@@ -829,12 +839,12 @@ class DataManager(object):
 					if l.transactionNum not in TNum2List and l.transactionNum != transactionNum:						# add the current locked transactionNum to wait for list
 						TNum2List.append(l.transactionNum)
 				self.waitlockTable[variableNum].append(lock)					# add lock into wait table
-				print("Transaction {2} : {0} lock for variable {1} wait for transaction {3}".format(lock.locktype,variableNum,transactionNum,TNum2List))
+				print("Transaction {2} : {0} lock in site{4} for variable {1} wait for transaction {3}".format(lock.locktype,variableNum,transactionNum,TNum2List,self.index))
 			else:																# grant lock
 				self.currentlockTable[variableNum].append(lock)					# add lock into currentLockTable
-				print("Transaction {2} : {0} lock for variable {1} succeed".format(lock.locktype,variableNum,transactionNum))
+				print("Transaction {2} : {0} lock in site{3} for variable {1} succeed".format(lock.locktype,variableNum,transactionNum,self.index))
 		else:
-			print("Transaction {2} : {0} lock for variable {1} site failed".format(lock.locktype,variableNum,transactionNum))
+			print("Transaction {2} : {0} lock in site{3} for variable {1} site failed".format(lock.locktype,variableNum,transactionNum,self.index))
 		return TNum1, TNum2List, Fail
 	def removeLock(self,transactionNum, variableNum, lock):
 		# remove lock, change next wait lock's state
@@ -860,7 +870,7 @@ class DataManager(object):
 				removeLockList.append(l) # remove
 				self.currentlockTable[variableNum].append(l) # add to currentlocktable
 				newGrantedLock.append(l) # return 
-				print("Transaction {2} : {0} lock for command {1} granted".format(l.locktype,l.commandNum,l.transactionNum))
+				print("Transaction {2} : {0} lock in site {3} for command {1} granted".format(l.locktype,l.commandNum,l.transactionNum,self.index))
 			else:
 				break
 		for l in removeLockList:
@@ -929,7 +939,7 @@ class DataManager(object):
 			Fail = True
 		if commandTmp.commandLock not in self.currentlockTable[commandTmp.variableNum]:
 			Fail = True
-			print ("update be denied because current site {0} doesn't contain the lock for variable {1}".format(self.index,commandTmp.variableNum))
+			print ("update for transaction {2} be denied because current site {0} doesn't contain the lock for variable {1}".format(self.index,commandTmp.variableNum,commandTmp.transactionNum))
 		commandVersion = commandTmp.index
 		variabletype = -1
 		if commandTmp.variableNum % 2 == 0:
