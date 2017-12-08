@@ -627,6 +627,7 @@ if __name__ == "__main__":
 		with open(inputFile,'r') as inFile:
 			for line in inFile:
 				# print(line)
+				line =line.replace(" ", "")
 				command = re.search('(([a-zA-Z]+))',line).group(0) if re.search('([a-zA-Z]+)',line) else 'NONE'
 				transactionNum = re.search('T([0-9]+)',line).group(1) if re.search('T([0-9]+)',line) else 'NONE'
 				variableNum = re.search('[x]([0-9]+)',line).group(1) if re.search('[x]([0-9]+)',line) else 'NONE'
