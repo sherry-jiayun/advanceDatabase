@@ -1,0 +1,5 @@
+begin(T1)
+R(T1,x2)
+fail(1)
+recover(1)
+end(T1)
