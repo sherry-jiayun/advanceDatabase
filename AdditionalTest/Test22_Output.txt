@@ -1,0 +1,5 @@
+The two reads will be blocked until recover(4) finishes.
+
+All transactions commit.
+T1 read 30 for x3.
+T2 read 33 for x3.

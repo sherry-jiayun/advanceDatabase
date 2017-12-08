@@ -454,10 +454,10 @@ class TransactionMachine(object):
 						# may caused by write command in same transaction
 						readResult = global_var.TransactionList[transactionNum].currentVariableValue[commandTmp.variableNum]
 					commandTmp.putResult(readResult)
-					print("Transaction {1} : Committed! read command {0} success read variable {2} with value {3}".format(commandTmp.commandNum,commandTmp.transactionNum,commandTmp.variableNum,commandTmp.value))
+					print("Transaction {1} : read command {0} success read variable {2} with value {3}".format(commandTmp.commandNum,commandTmp.transactionNum,commandTmp.variableNum,commandTmp.value))
 				else:
 					global_var.TransactionList[commandTmp.transactionNum].currentVariableValue[commandTmp.variableNum] = commandTmp.value
-					print("Transaction {1} : Committed! write command {0} success write variable {2} with value {3}".format(commandTmp.commandNum,commandTmp.transactionNum,commandTmp.variableNum,commandTmp.value))
+					print("Transaction {1} : write command {0} success write variable {2} with value {3}".format(commandTmp.commandNum,commandTmp.transactionNum,commandTmp.variableNum,commandTmp.value))
 				commandTmp.status = global_var.COMMAND_STATUS_SUCCESS
 				
 				if l.transactionNum not in newChangedTransaction:
