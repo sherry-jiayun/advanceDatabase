@@ -473,7 +473,10 @@ class TransactionMachine(object):
 				else:
 					global_var.TransactionList[commandTmp.transactionNum].currentVariableValue[commandTmp.variableNum] = commandTmp.value
 					print("Transaction {1} : write command {0} success write variable {2} with value {3}".format(commandTmp.commandNum,commandTmp.transactionNum,commandTmp.variableNum,commandTmp.value))
+<<<<<<< HEAD
 					print(commandTmp.transactionNum,commandTmp.variableNum,commandTmp.value)
+=======
+>>>>>>> e8d0fe90cbc953a1ac6b3fb8c8350cc952a1864b
 				commandTmp.status = global_var.COMMAND_STATUS_SUCCESS
 				
 				if l.transactionNum not in newChangedTransaction:
