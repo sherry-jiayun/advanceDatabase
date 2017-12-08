@@ -30,7 +30,7 @@ if __name__ == "__main__":
 			global_var.VariableSiteList[i+1] = [1+(i+1) % 10]
 	for v in global_var.VariableSiteList.keys():
 		print("variable {0} in sites {1}".format(v,global_var.VariableSiteList[v]))
-
+	print()
 	# test.printFunction()
 	# generate data manager
 	for i in range(10):
