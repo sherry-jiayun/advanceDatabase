@@ -114,7 +114,10 @@ class Command(object):
 		self.status = global_var.COMMAND_STATUS_INITIALIZE # -1 for initialize, 0 for success, 1 for wait, 2 for fail 
 		self.commandNum = commandNum
 		# self.lockNumRequired = lockNumRequired
-		print("create write command with commandNum {0} in transaction {1}".format(self.commandNum,self.transactionNum))
+		if(self.commandtype == 1):
+			print("Transaction {0} : create read command with commandNum {1}".format(self.transactionNum, self.commandNum))
+		else:
+			print("Transaction {0} : create write command with commandNum {1}".format(self.transactionNum, self.commandNum))
 	def putLock(self,commandLock):
 		self.commandLock = commandLock
 	def putResult(self,value):
@@ -133,7 +136,7 @@ class TransactionMachine(object):
 		global_var.TransactionList[transactionNum] = transTmp		# append to transactionList
 		self.__addVertex(transactionNum)							# add vertex to graph
 																	# return nothing
-		print("Transaction {} begin.".format(transactionNum))
+		print("Transaction {} : begin.".format(transactionNum))
 		return
 
 
@@ -141,13 +144,13 @@ class TransactionMachine(object):
 
 		success = True
 		if global_var.TransactionList[transactionNum].status == global_var.TRANSACTION_STATUS_ABORT:
-			print("transaction {0} abort and will not execute any command".format(transactionNum))
+			print("Transaction {0} : abort and will not execute any command".format(transactionNum))
 			return False
 		if global_var.TransactionList[transactionNum].status == global_var.TRANSACTION_STATUS_WAIT:
 			# add command to wait list directly
 			global_var.TransactionList[transactionNum].addWaitCommand(['W',transactionNum,variableNum,variableValue])
-			print("command will wait since former command in transaction {} doesn't finish".format(transactionNum))
-			print("transaction {0} wait list: {1}".format(transactionNum,global_var.TransactionList[transactionNum].waitCommandList))
+			print("Transaction {0} : command will wait since former command in transaction {0} doesn't finish".format(transactionNum))
+			print("Transaction {0} : wait list: {1}".format(transactionNum,global_var.TransactionList[transactionNum].waitCommandList))
 			return False
 
 		commandNum = global_var.TransactionList[transactionNum].getNexCommandNum()					# get command number
@@ -159,7 +162,7 @@ class TransactionMachine(object):
 		result_wait =False
 		result_fail = False
 		for i in siteList:											# go through list and checkLock()
-			print("check lock from site {}".format(i))
+			print("Transaction {0} : check lock from site {1}".format(transactionNum, i))
 			TNum1, TNum2List, Fail = global_var.DataManagerList[i].checkLock(transactionNum,variableNum,commandLock)
 
 			if not Fail and len(TNum2List) <= 0:					#if success(not fail and no wait)
@@ -174,30 +177,30 @@ class TransactionMachine(object):
 			commandTmp.putLock(commandLock)
 			global_var.TransactionList[transactionNum].currentVariableValue[variableNum] = variableValue # add variable to transaction
 			commandTmp.status = global_var.COMMAND_STATUS_SUCCESS
-			print("lock check granted")
+			print("Transaction {0} : lock check granted".format(transactionNum))
 
 		elif not result_success and result_wait and not result_fail:# If wait
 			commandTmp.putLock(commandLock)
 			commandTmp.status = global_var.COMMAND_STATUS_WAIT
-			print("lock check waited")
+			print("Transaction {0} : lock check waited".format(transactionNum))
 
 		elif result_success and not result_wait and result_fail:    # If success but some sites failed
 			commandTmp.putLock(commandLock)
 			global_var.TransactionList[transactionNum].currentVariableValue[variableNum] = variableValue
 			commandTmp.status = global_var.COMMAND_STATUS_SUCCESS
-			print("lock check granted but some site failed")
+			print("Transaction {0} : lock check granted but some site failed".format(transactionNum))
 
 		elif not result_success and result_wait and result_fail:	# If wait but some sites failed
 			commandTmp.putLock(commandLock)
 			commandTmp.status = global_var.COMMAND_STATUS_WAIT
-			print("lock check wait and some site failed")
+			print("Transaction {0} : lock check wait and some site failed".format(transactionNum))
 
 		elif not result_success and not result_wait and result_fail:# If all sites failed
 			# change transaction's status to wait / add to wait list
 			global_var.TransactionList[transactionNum].status = global_var.TRANSACTION_STATUS_WAIT
 			global_var.TransactionList[transactionNum].addWaitCommand(['W',transactionNum,variableNum,variableValue])
-			print("lock check wait and command add to transaction {} wait list".format(transactionNum))
-			print("transaction {0} wait list: {1}".format(transactionNum,global_var.TransactionList[transactionNum].waitCommandList))
+			print("Transaction {0} : lock check wait and command add to transaction {0} wait list".format(transactionNum))
+			print("Transaction {0}: wait list: {1}".format(transactionNum,global_var.TransactionList[transactionNum].waitCommandList))
 			success = False
 			return False
 		else:
@@ -209,7 +212,7 @@ class TransactionMachine(object):
 
 		self.index = self.index + 1
 		# deadlock detect
-		print("Transaction {0} want to write to variable {1} with value {2} granted? {3}".format(transactionNum,variableNum,variableValue,commandLock.status))
+		print("Transaction {0} : want to write to variable {1} with value {2}.".format(transactionNum,variableNum,variableValue))
 		self.__deadLock()
 		return success
 	def readCommand(self,transactionNum,variableNum):
@@ -222,13 +225,13 @@ class TransactionMachine(object):
 	def readRO(self,transactionNum,variableNum):
 		# same index as transaction
 		if global_var.TransactionList[transactionNum].status == global_var.TRANSACTION_STATUS_ABORT:
-			print("transaction {0} abort and will not execute any command".format(transactionNum))
+			print("Transaction {0} : abort and will not execute any command".format(transactionNum))
 			return False
 		if global_var.TransactionList[transactionNum].status == global_var.TRANSACTION_STATUS_WAIT:
 			# add command to wait list directly
 			global_var.TransactionList[transactionNum].addWaitCommand(['R',transactionNum,variableNum])
-			print("command will wait since former command in transaction {} doesn't finish".format(transactionNum))
-			print("transaction {0} wait list: {1}".format(transactionNum,global_var.TransactionList[transactionNum].waitCommandList))
+			print("Transaction {0} : command will wait since former command in transaction {0} doesn't finish".format(transactionNum))
+			print("Transaction {0} wait list: {1}".format(transactionNum,global_var.TransactionList[transactionNum].waitCommandList))
 			return False
 		success = True
 
@@ -244,7 +247,7 @@ class TransactionMachine(object):
 		if global_var.TransactionList[transactionNum].status == global_var.TRANSACTION_STATUS_WAIT:
 			# commandTmp.status = global_var.COMMAND_STATUS_WAIT
 			global_var.TransactionList[transactionNum].addCommand(commandTmp)
-			print("command {0} for read only transaction {1} wait because have previous wait command".format(commandNum,transactionNum))
+			print("Transaction {1} : command {0} for read only transaction {1} wait because have previous wait command".format(commandNum,transactionNum))
 			return
 		for i in siteList:# go through list and checkLock()
 			# no need to check lock
@@ -271,21 +274,21 @@ class TransactionMachine(object):
 			commandTmp.status = global_var.COMMAND_STATUS_WAIT
 			global_var.TransactionList[transactionNum].status = global_var.TRANSACTION_STATUS_WAIT
 			global_var.TransactionList[transactionNum].addWaitCommand(['R',transactionNum,variableNum])
-			print("lock check wait and command add to transaction {} wait list".format(transactionNum))
-			print("transaction {0} wait list: {1}".format(transactionNum,global_var.TransactionList[transactionNum].waitCommandList))
+			print("Transaction {0} : lock check wait and command add to transaction {0} wait list".format(transactionNum))
+			print("Transaction {0} : wait list: {1}".format(transactionNum,global_var.TransactionList[transactionNum].waitCommandList))
 			success = False
-		print("Read only Transaction {0} want to read to variable {1} with value {2}".format(transactionNum,variableNum,commandTmp.value))
+		print("Read only Transaction {0} : want to read to variable {1} with value {2}".format(transactionNum,variableNum,commandTmp.value))
 		return success
 	def read(self,transactionNum, variableNum):
 
 		if global_var.TransactionList[transactionNum].status == global_var.TRANSACTION_STATUS_ABORT:
-			print("transaction {0} abort and will not execute any command".format(transactionNum))
+			print("Transaction {0} : abort and will not execute any command".format(transactionNum))
 			return False
 		if global_var.TransactionList[transactionNum].status == global_var.TRANSACTION_STATUS_WAIT:
 			# add command to wait list directly
 			global_var.TransactionList[transactionNum].addWaitCommand(['R',transactionNum,variableNum])
-			print("command will wait since former command in transaction {} doesn't finish".format(transactionNum))
-			print("transaction {0} wait list: {1}".format(transactionNum,global_var.TransactionList[transactionNum].waitCommandList))
+			print("Transaction {0} : command will wait since former command in transaction {0} doesn't finish".format(transactionNum))
+			print("Transaction {0} : wait list: {1}".format(transactionNum,global_var.TransactionList[transactionNum].waitCommandList))
 			return False
 		success = True
 		commandNum = global_var.TransactionList[transactionNum].getNexCommandNum()     				# get command number
@@ -298,7 +301,7 @@ class TransactionMachine(object):
 		result_fail = False
 		readResult = -1
 		for i in siteList:									# go through list and checkLock()
-			print("check lock from site {}".format(i))
+			print("Transaction {0} : check lock from site {1}".format(transactionNum, i))
 			TNum1, TNum2List, Fail = global_var.DataManagerList[i].checkLock(transactionNum,variableNum,commandLock)
 			if not Fail and len(TNum2List) <= 0:			#if success(not fail and no wait)
 				result_success = True
@@ -318,11 +321,11 @@ class TransactionMachine(object):
 				readResult = global_var.TransactionList[transactionNum].currentVariableValue[variableNum]  # read the value this transaction wrote
 			commandTmp.putResult(readResult)
 			commandTmp.status = global_var.COMMAND_STATUS_SUCCESS
-			print("lock check granted")
+			print("Transaction {0} : lock check granted".format(transactionNum))
 		elif not result_success and result_wait and not result_fail:			# If wait
 			commandTmp.putLock(commandLock)
 			commandTmp.status = global_var.COMMAND_STATUS_WAIT
-			print("lock check waited")
+			print("Transaction {0} : lock check waited".format(transactionNum))
 		elif result_success and not result_wait and result_fail:				# If success but some sites failed
 			commandLock.status = global_var.LOCK_STATUS_GRANTED
 			commandTmp.putLock(commandLock)
@@ -330,17 +333,16 @@ class TransactionMachine(object):
 				readResult = global_var.TransactionList[transactionNum].currentVariableValue[variableNum] # read the value this transaction wrote
 			commandTmp.putResult(readResult)
 			commandTmp.status = global_var.COMMAND_STATUS_SUCCESS
-			print("lock check granted but some site failed")
+			print("Transaction {0} : lock check granted but some site failed".format(transactionNum))
 		elif not result_success and result_wait and result_fail:				# If wait but some sites failed
 			commandTmp.putLock(commandLock)
 			commandTmp.status = global_var.COMMAND_STATUS_WAIT
-			print("lock check waited and some site failed")
-
+			print("Transaction {0} : lock check waited but some site failed".format(transactionNum))
 		elif not result_success and not result_wait and result_fail:			# If all sites failed
 			global_var.TransactionList[transactionNum].status = global_var.TRANSACTION_STATUS_WAIT
 			global_var.TransactionList[transactionNum].addWaitCommand(['R',transactionNum,variableNum])
-			print("lock check wait and command add to transaction {} wait list".format(transactionNum))
-			print("transaction {0} wait list: {1}".format(transactionNum,global_var.TransactionList[transactionNum].waitCommandList))
+			print("Transaction {0} : lock check wait and command add to transaction {0} wait list".format(transactionNum))
+			print("transaction {0} : wait list: {1}".format(transactionNum,global_var.TransactionList[transactionNum].waitCommandList))
 			success =False
 			return False
 		else:
@@ -350,7 +352,7 @@ class TransactionMachine(object):
 		self.index = self.index + 1
 		# deadlock detect
 		self.__deadLock()
-		print("Transaction {0} want to read to variable {1} with value {2} granted? {3}".format(transactionNum,variableNum,commandTmp.value,commandLock.status))
+		print("Transaction {0} : want to read to variable {1} with value {2}.".format(transactionNum,variableNum,commandTmp.value))
 		return success
 	def endCommand(self,transactionNum):
 		if global_var.TransactionList[transactionNum].readOnly:
@@ -361,13 +363,13 @@ class TransactionMachine(object):
 	def endRO(self,transactionNum):
 
 		if global_var.TransactionList[transactionNum].status == global_var.TRANSACTION_STATUS_ABORT:
-			print("transaction {0} abort and will not execute any command".format(transactionNum))
+			print("Transaction {0} : abort and will not execute any command".format(transactionNum))
 			return False
 		if global_var.TransactionList[transactionNum].status == global_var.TRANSACTION_STATUS_WAIT:
 			# add command to wait list directly
 			global_var.TransactionList[transactionNum].addWaitCommand(['end',transactionNum])
-			print("command will wait since former command in transaction {} doesn't finish".format(transactionNum))
-			print("transaction {0} wait list: {1}".format(transactionNum,global_var.TransactionList[transactionNum].waitCommandList))
+			print("Transaction {0} : command will wait since former command in transaction {0} doesn't finish".format(transactionNum))
+			print("Transaction {0} : wait list: {1}".format(transactionNum,global_var.TransactionList[transactionNum].waitCommandList))
 			return False
 		print()
 		validate = True
@@ -380,27 +382,27 @@ class TransactionMachine(object):
 				break
 		if validate:
 			global_var.TransactionList[transactionNum].status = global_var.TRANSACTION_STATUS_COMMIT
-			print("transaction {0} commit".format(transactionNum))
+			print("Transaction {0} : commit".format(transactionNum))
 		else:
 			if global_var.TransactionList[transactionNum].status != global_var.TRANSACTION_STATUS_ABORT:
 				global_var.TransactionList[transactionNum].status = global_var.TRANSACTION_STATUS_WAIT_COMMIT
 				if transactionNum not in self.waitcommittransaction:
 					self.waitcommittransaction.append(transactionNum)
-				print("transaction {0} wait for commit".format(transactionNum))
+				print("Transaction {0} : wait for commit".format(transactionNum))
 			else:
-				print("transaction {0} abort".format(transactionNum))
+				print("Transaction {0} : abort".format(transactionNum))
 		return True
 
 	def end(self,transactionNum):
 		# check all command's status
 		if global_var.TransactionList[transactionNum].status == global_var.TRANSACTION_STATUS_ABORT:
-			print("transaction {0} abort and will not execute any command".format(transactionNum))
+			print("Transaction {0} : abort and will not execute any command".format(transactionNum))
 			return False
 		if global_var.TransactionList[transactionNum].status == global_var.TRANSACTION_STATUS_WAIT:
 			# add command to wait list directly
 			global_var.TransactionList[transactionNum].addWaitCommand(['end',transactionNum])
-			print("command will wait since former command in transaction {} doesn't finish".format(transactionNum))
-			print("transaction {0} wait list: {1}".format(transactionNum,global_var.TransactionList[transactionNum].waitCommandList))
+			print("Transaction {0} : command will wait since former command in transaction {0} doesn't finish".format(transactionNum))
+			print("Transaction {0} : wait list: {1}".format(transactionNum,global_var.TransactionList[transactionNum].waitCommandList))
 			return False
 		print()
 		validate = True
@@ -433,7 +435,7 @@ class TransactionMachine(object):
 				self.waitcommittransaction.remove(transactionNum)
 			# remove edge from list 
 			self.__deleteVertex(transactionNum)
-			print("transaction {0} commit".format(transactionNum))
+			# print("Transaction {0} : commit".format(transactionNum))
 
 			newChangedTransaction = []
 			for l in newGrantedLockList:
@@ -452,10 +454,10 @@ class TransactionMachine(object):
 						# may caused by write command in same transaction
 						readResult = global_var.TransactionList[transactionNum].currentVariableValue[commandTmp.variableNum]
 					commandTmp.putResult(readResult)
-					print("read command {0} in transaction {1} success read variable {2} with value {3}".format(commandTmp.commandNum,commandTmp.transactionNum,commandTmp.variableNum,commandTmp.value))
+					print("Transaction {1} : Committed! read command {0} success read variable {2} with value {3}".format(commandTmp.commandNum,commandTmp.transactionNum,commandTmp.variableNum,commandTmp.value))
 				else:
 					global_var.TransactionList[commandTmp.transactionNum].currentVariableValue[commandTmp.variableNum] = commandTmp.value
-					print("write command {0} in transaction {1} success read variable {2} with value {3}".format(commandTmp.commandNum,commandTmp.transactionNum,commandTmp.variableNum,commandTmp.value))
+					print("Transaction {1} : Committed! write command {0} success write variable {2} with value {3}".format(commandTmp.commandNum,commandTmp.transactionNum,commandTmp.variableNum,commandTmp.value))
 				commandTmp.status = global_var.COMMAND_STATUS_SUCCESS
 				
 				if l.transactionNum not in newChangedTransaction:
@@ -482,9 +484,9 @@ class TransactionMachine(object):
 				global_var.TransactionList[transactionNum].status = global_var.TRANSACTION_STATUS_WAIT_COMMIT
 				if transactionNum not in self.waitcommittransaction:
 					self.waitcommittransaction.append(transactionNum)
-				print("transaction {0} wait for commit".format(transactionNum))
+				print("Transaction {0} : wait for commit".format(transactionNum))
 			else:
-				print("transaction {0} abort".format(transactionNum))
+				print("Transaction {0} : abort".format(transactionNum))
 		return True
 
 	def fail(self,datamanagerNum):
@@ -497,7 +499,7 @@ class TransactionMachine(object):
 		for t in transactionList:
 			if global_var.TransactionList[t].status != global_var.TRANSACTION_STATUS_COMMIT:
 				global_var.TransactionList[t].status = global_var.TRANSACTION_STATUS_ABORT
-				print("transaction {0} abort because site {1} recover".format(t,datamanagerNum))
+				print("Transaction {0} : abort because site {1} recover".format(t,datamanagerNum))
 				self.__abort(t)
 		# may cause waitted command continue 
 		for t in global_var.TransactionList.keys():
@@ -566,7 +568,7 @@ class TransactionMachine(object):
 		global_var.TransactionList[transactionNum] = transTmp# append to transactionList
 		self.__addVertex(transactionNum)# add vertex to graph
 		# return nothing
-		print("Read only Transaction {} begin.".format(transactionNum))
+		print("Read only Transaction {} : begin.".format(transactionNum))
 		return
 
 	def dumpCommand(self,datamanagerNum = -1,variableNum = -1):
@@ -647,10 +649,10 @@ class TransactionMachine(object):
 					# may caused by write command in same transaction
 					readResult = global_var.TransactionList[transactionNum].currentVariableValue[commandTmp.variableNum]
 				commandTmp.putResult(readResult)
-				print("read command {0} in transaction {1} success read variable {2} with value {3}".format(commandTmp.commandNum,commandTmp.transactionNum,commandTmp.variableNum,commandTmp.value))
+				print("Transaction {1} : Committed! read command {0} success read variable {2} with value {3}".format(commandTmp.commandNum,commandTmp.transactionNum,commandTmp.variableNum,commandTmp.value))
 			else:
 				global_var.TransactionList[commandTmp.transactionNum].currentVariableValue[commandTmp.variableNum] = commandTmp.value
-				print("write command {0} in transaction {1} success read variable {2} with value {3}".format(commandTmp.commandNum,commandTmp.transactionNum,commandTmp.variableNum,commandTmp.value))
+				print("Transaction {1} : Committed! write command {0} success write variable {2} with value {3}".format(commandTmp.commandNum,commandTmp.transactionNum,commandTmp.variableNum,commandTmp.value))
 			commandTmp.status = global_var.COMMAND_STATUS_SUCCESS
 			
 			if l.transactionNum not in newChangedTransaction:
@@ -693,7 +695,7 @@ class TransactionMachine(object):
 		if cycle and youngest != None:
 			print()
 			print(self.cycleTransaction)
-			print ("youngest transaction {}".format(youngest))
+			print ("Transaction {} : Abort youngest transaction".format(youngest))
 			self.__abort(youngest)
 			self.__deadLock()
 
@@ -788,12 +790,12 @@ class DataManager(object):
 				for l in self.currentlockTable[variableNum]:					
 					if l.transactionNum not in TNum2List and l.transactionNum != transactionNum:						# add the current locked transactionNum to wait for list
 						TNum2List.append(l.transactionNum)
-				print("{0} lock for variable {1} from transaction {2} wait for transaction {3}".format(lock.locktype,variableNum,transactionNum,TNum2List))
+				print("Transaction {2} : {0} lock for variable {1} wait for transaction {3}".format(lock.locktype,variableNum,transactionNum,TNum2List))
 			else:																# grant lock
 				self.currentlockTable[variableNum].append(lock)					# add lock into currentLockTable
-				print("{0} lock for variable {1} from transaction {2} succeed".format(lock.locktype,variableNum,transactionNum))
+				print("Transaction {2} : {0} lock for variable {1} succeed".format(lock.locktype,variableNum,transactionNum))
 		else:
-			print("{0} lock for variable {1} from transaction {2} site failed".format(lock.locktype,variableNum,transactionNum))
+			print("Transaction {2} : {0} lock for variable {1} site failed".format(lock.locktype,variableNum,transactionNum))
 		return TNum1, TNum2List, Fail
 	def removeLock(self,transactionNum, variableNum, lock):
 		# remove lock, change next wait lock's state
@@ -813,7 +815,7 @@ class DataManager(object):
 				removeLockList.append(l) # remove
 				self.currentlockTable[variableNum].append(l) # add to currentlocktable
 				newGrantedLock.append(l) # return 
-				print("{0} lock for command {1} in transaction {2} granted".format(l.locktype,l.commandNum,l.transactionNum))
+				print("Transaction {2} : {0} lock for command {1} granted".format(l.locktype,l.commandNum,l.transactionNum))
 			else:
 				break
 		for l in removeLockList:
@@ -821,7 +823,7 @@ class DataManager(object):
 		return newGrantedLock
 	def fail(self):
 		self.status = False 
-		print("site {0} failed".format(self.index))
+		print("Site {0} : failed".format(self.index))
 		return
 	def recover(self):
 		# clear lock table, remove lock, change transaction status, change variable's accessible

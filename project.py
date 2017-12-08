@@ -17,15 +17,16 @@ global TransactionList # all transaction
 
 
 if __name__ == "__main__":
-
+	print("Database initial information: 20 variables in 10 sites:")
+	print()
 	# generate variable list
 	for i in range(20):
 		if (i + 1) % 2 == 0:
 			global_var.VariableSiteList[i+1] = [1,2,3,4,5,6,7,8,9,10]
 		else:
 			global_var.VariableSiteList[i+1] = [1+(i+1) % 10]
-	for v in global_var.VariableSiteList.keys():
-		print("variable {0} in sites {1}".format(v,global_var.VariableSiteList[v]))
+	# for v in global_var.VariableSiteList.keys():
+	# 	print("variable {0} in sites {1}".format(v,global_var.VariableSiteList[v]))
 
 	# test.printFunction()
 	# generate data manager
@@ -615,10 +616,10 @@ if __name__ == "__main__":
 	TM.endCommand(1)'''
 	check = True
 	if len(sys.argv) < 2:
-		print('no input file found')
+		print('Error: no input file found.')
 		check = False
 	if len(sys.argv) > 2:
-		print('more than one input file found')
+		print('Error: more than one input file found.')
 		check = False
 	if check:
 		inputFile = sys.argv[1]
@@ -643,9 +644,9 @@ if __name__ == "__main__":
 						if tNum not in global_var.TransactionList.keys():
 							TM.begin(tNum)
 						else:
-							print("Transaction {} already exist.".format(tNum))
+							print("Error: Transaction {} already exist.".format(tNum))
 					else:
-						print("Please enter transactionNum.")
+						print("Error: Please enter transactionNum.")
 				if 'W' in command:
 					if transactionNum != 'NONE' and variableNum != 'NONE' and value != 'NONE':
 						tNum = int(transactionNum)
@@ -654,9 +655,9 @@ if __name__ == "__main__":
 						if tNum in global_var.TransactionList.keys():
 							TM.write(tNum,vNum,valueNum)
 						else:
-							print("Command denied because transaction {} doesn't exist".format(tNum))
+							print("Error: Command denied because transaction {} doesn't exist".format(tNum))
 					else:
-						print("Please enter transaction number/variable number/value")
+						print("Error: Please enter transaction number/variable number/value")
 				if 'R' in command:
 					if transactionNum != 'NONE' and variableNum != 'NONE':
 						tNum = int(transactionNum)
@@ -664,36 +665,36 @@ if __name__ == "__main__":
 						if tNum in global_var.TransactionList.keys():
 							TM.readCommand(tNum,rNum)
 						else:
-							print("Command denied because transaction {} doesn't exist".format(tNum))
+							print("Error: Command denied because transaction {} doesn't exist".format(tNum))
 					else:
-						print("Please enter transaction number/variable number")
+						print("Error: Please enter transaction number/variable number")
 				if 'end' in command:
 					if transactionNum != 'NONE':
 						tNum = int(transactionNum)
 						if tNum in global_var.TransactionList.keys():
 							TM.end(tNum)
 						else:
-							print("Transaction {} not exist.".format(tNum))
+							print("Error: Transaction {} not exist.".format(tNum))
 					else:
-						print("Please enter transactionNum.")
+						print("Error: Please enter transactionNum.")
 				if 'fail' in command:
 					if siteNum != 'NONE':
 						sNum = int(siteNum)
 						if sNum in global_var.DataManagerList.keys():
 							TM.fail(sNum)
 						else:
-							print("Site {} not exist".format(sNum))
+							print("Error: Site {} not exist".format(sNum))
 					else:
-						print("Please enter site number.")
+						print("Error: Please enter site number.")
 				if 'recover' in command:
 					if siteNum != 'NONE':
 						sNum = int(siteNum)
 						if sNum in global_var.DataManagerList.keys():
 							TM.recover(sNum)
 						else:
-							print("Site {} not exist".format(sNum))
+							print("Error: Site {} not exist".format(sNum))
 					else:
-						print("Please enter site number.")
+						print("Error: Please enter site number.")
 				if 'dump' in command:
 					if siteNum == 'NONE' and variableNum == 'NONE':
 						TM.dumpCommand()
@@ -702,12 +703,14 @@ if __name__ == "__main__":
 						if sNum in global_var.DataManagerList.keys():
 							TM.dumpCommand(sNum,-1)
 						else:
-							print("Site {} not exist".format(sNum))
+							print("Error: Site {} not exist".format(sNum))
 					elif siteNum == 'NONE' and variableNum != 'NONE':
 						vNum = int(variableNum)
 						if vNum in global_var.VariableSiteList.keys():
 							TM.dumpCommand(-1,vNum)
 						else:
-							print("variable {} not exist".format(vNum))
+							print("Error: variable {} not exist".format(vNum))
 					else:
-						print("command not recognize.")
+						print("Error: command not recognize.")
+
+
