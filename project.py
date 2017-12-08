@@ -18,16 +18,18 @@ global TransactionList # all transaction
 
 
 if __name__ == "__main__":
+	print()
 	print("Database initial information: 20 variables in 10 sites:")
 	print()
+
 	# generate variable list
 	for i in range(20):
 		if (i + 1) % 2 == 0:
 			global_var.VariableSiteList[i+1] = [1,2,3,4,5,6,7,8,9,10]
 		else:
 			global_var.VariableSiteList[i+1] = [1+(i+1) % 10]
-	# for v in global_var.VariableSiteList.keys():
-	# 	print("variable {0} in sites {1}".format(v,global_var.VariableSiteList[v]))
+	for v in global_var.VariableSiteList.keys():
+		print("variable {0} in sites {1}".format(v,global_var.VariableSiteList[v]))
 
 	# test.printFunction()
 	# generate data manager
@@ -37,7 +39,10 @@ if __name__ == "__main__":
 		global_var.DataManagerList[i+1] = DM
 		print()
 	
+	print("------------------------------------------------------------")
 	TM = module.TransactionMachine()
+	print("Transaction Status:")
+	print()
 	# Test 1
 	'''TM.begin(1)
 	TM.begin(2)

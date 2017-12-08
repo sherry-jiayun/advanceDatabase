@@ -142,6 +142,7 @@ class TransactionMachine(object):
 		self.__addVertex(transactionNum)							# add vertex to graph
 																	# return nothing
 		print("Transaction {} : begin.".format(transactionNum))
+		print()
 		return
 
 	def write(self,transactionNum, variableNum, variableValue):
