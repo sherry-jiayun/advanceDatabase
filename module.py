@@ -435,7 +435,7 @@ class TransactionMachine(object):
 				self.waitcommittransaction.remove(transactionNum)
 			# remove edge from list 
 			self.__deleteVertex(transactionNum)
-			# print("Transaction {0} : commit".format(transactionNum))
+			print("Transaction {0} : commit".format(transactionNum))
 
 			newChangedTransaction = []
 			for l in newGrantedLockList:
