@@ -1,6 +1,6 @@
-# Author: Jiayu Yu, Kailin Luo
+# Author: Jiayun Yu, Kailin Luo
 # Date: Dec 8th, 2017
-# Final Prject for Advanced Database System class
+# Final Project for Advanced Database System class
 
 from __future__ import print_function
 import project 

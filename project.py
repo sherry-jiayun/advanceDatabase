@@ -1,6 +1,6 @@
-# Author: Jiayu Yu, Kailin Luo
+# Author: Jiayun Yu, Kailin Luo
 # Date: Dec 8th, 2017
-# Final Prject for Advanced Database System class
+# Final Project for Advanced Database System class
 
 from __future__ import print_function
 import module
@@ -30,7 +30,7 @@ if __name__ == "__main__":
 		global_var.DataManagerList[i+1] = DM
 		print()
 	
-	print("------------------------------------------------------------")
+	print("---------------------------------------------------------------------")
 	TM = module.TransactionMachine()
 	print("Transaction Status:")
 	print()

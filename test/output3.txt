@@ -1,0 +1,70 @@
+Transaction Status:
+
+Transaction 1 : begin.
+
+Transaction 2 : begin.
+
+Transaction 1 : create read command with commandNum 0
+Transaction 1 : check lock from site 4
+Transaction 1 : read lock in site4 for variable 3: AVAILABLE
+Site 4 : command with current version 2 read variable 3 version 0 value 30
+Transaction 1 : get lock
+Transaction 1 : want to read to variable 3 with value 30.
+
+Site 2 : fail
+
+Transaction 2 : create write command with commandNum 0
+Transaction 2 : check lock from site 1
+Transaction 2 : write lock in site1 for variable 8: AVAILABLE
+Transaction 2 : check lock from site 2
+Transaction 2 : write lock in site2 for variable 8 site FAIL
+Transaction 2 : check lock from site 3
+Transaction 2 : write lock in site3 for variable 8: AVAILABLE
+Transaction 2 : check lock from site 4
+Transaction 2 : write lock in site4 for variable 8: AVAILABLE
+Transaction 2 : check lock from site 5
+Transaction 2 : write lock in site5 for variable 8: AVAILABLE
+Transaction 2 : check lock from site 6
+Transaction 2 : write lock in site6 for variable 8: AVAILABLE
+Transaction 2 : check lock from site 7
+Transaction 2 : write lock in site7 for variable 8: AVAILABLE
+Transaction 2 : check lock from site 8
+Transaction 2 : write lock in site8 for variable 8: AVAILABLE
+Transaction 2 : check lock from site 9
+Transaction 2 : write lock in site9 for variable 8: AVAILABLE
+Transaction 2 : check lock from site 10
+Transaction 2 : write lock in site10 for variable 8: AVAILABLE
+Transaction 2 : get lock success but some site failed
+Transaction 2 : add to changed variable list, new list: {8: 88}
+Transaction 2 : want to write to variable 8 with value 88.
+
+Transaction 2 : create read command with commandNum 1
+Transaction 2 : check lock from site 4
+Transaction 2 : read lock in site4 for variable 3: AVAILABLE
+Site 4 : command with current version 4 read variable 3 version 0 value 30
+Transaction 2 : get lock
+Transaction 2 : want to read to variable 3 with value 30.
+
+Transaction 1 : create write command with commandNum 1
+Transaction 1 : check lock from site 6
+Transaction 1 : write lock in site6 for variable 5: AVAILABLE
+Transaction 1 : get lock success
+Transaction 1 : add to changed variable list, new list: {5: 91}
+Transaction 1 : want to write to variable 5 with value 91.
+
+Transaction 2 : Committed!
+Site 1 : update variable 8 to version 3 with value 88
+Site 2 : update for transaction 2 be denied because current site 2 doesn't contain the lock for variable 8
+Site 3 : update variable 8 to version 3 with value 88
+Site 4 : update variable 8 to version 3 with value 88
+Site 5 : update variable 8 to version 3 with value 88
+Site 6 : update variable 8 to version 3 with value 88
+Site 7 : update variable 8 to version 3 with value 88
+Site 8 : update variable 8 to version 3 with value 88
+Site 9 : update variable 8 to version 3 with value 88
+Site 10 : update variable 8 to version 3 with value 88
+
+Site 2 : recover!
+
+Transaction 1 : Committed!
+Site 6 : update variable 5 to version 5 with value 91

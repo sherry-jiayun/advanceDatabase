@@ -1,0 +1,208 @@
+Transaction Status:
+
+Transaction 1 : begin.
+
+ReadOnly Transaction 2 : begin.
+
+Transaction 1 : create write command with commandNum 0
+Transaction 1 : check lock from site 2
+Transaction 1 : write lock in site2 for variable 1: AVAILABLE
+Transaction 1 : get lock success
+Transaction 1 : add to changed variable list, new list: {1: 101}
+Transaction 1 : want to write to variable 1 with value 101.
+
+Transaction 2 : create read command with commandNum 0
+ReadOnly Transaction 2 : check value from site 1
+Site 1 : command with current version 1 read variable 2 version 0 value 20
+ReadOnly Transaction 2 : read success
+ReadOnly Transaction 2 : want to read to variable 2 with value 20
+
+Transaction 1 : create write command with commandNum 1
+Transaction 1 : check lock from site 1
+Transaction 1 : write lock in site1 for variable 2: AVAILABLE
+Transaction 1 : check lock from site 2
+Transaction 1 : write lock in site2 for variable 2: AVAILABLE
+Transaction 1 : check lock from site 3
+Transaction 1 : write lock in site3 for variable 2: AVAILABLE
+Transaction 1 : check lock from site 4
+Transaction 1 : write lock in site4 for variable 2: AVAILABLE
+Transaction 1 : check lock from site 5
+Transaction 1 : write lock in site5 for variable 2: AVAILABLE
+Transaction 1 : check lock from site 6
+Transaction 1 : write lock in site6 for variable 2: AVAILABLE
+Transaction 1 : check lock from site 7
+Transaction 1 : write lock in site7 for variable 2: AVAILABLE
+Transaction 1 : check lock from site 8
+Transaction 1 : write lock in site8 for variable 2: AVAILABLE
+Transaction 1 : check lock from site 9
+Transaction 1 : write lock in site9 for variable 2: AVAILABLE
+Transaction 1 : check lock from site 10
+Transaction 1 : write lock in site10 for variable 2: AVAILABLE
+Transaction 1 : get lock success
+Transaction 1 : add to changed variable list, new list: {1: 101, 2: 102}
+Transaction 1 : want to write to variable 2 with value 102.
+
+Transaction 2 : create read command with commandNum 1
+ReadOnly Transaction 2 : check value from site 2
+Site 2 : command with current version 1 read variable 1 version 0 value 10
+ReadOnly Transaction 2 : read success
+ReadOnly Transaction 2 : want to read to variable 1 with value 10
+
+Transaction 1 : Committed!
+Site 2 : update variable 1 to version 2 with value 101
+Site 1 : update variable 2 to version 3 with value 102
+Site 2 : update variable 2 to version 3 with value 102
+Site 3 : update variable 2 to version 3 with value 102
+Site 4 : update variable 2 to version 3 with value 102
+Site 5 : update variable 2 to version 3 with value 102
+Site 6 : update variable 2 to version 3 with value 102
+Site 7 : update variable 2 to version 3 with value 102
+Site 8 : update variable 2 to version 3 with value 102
+Site 9 : update variable 2 to version 3 with value 102
+Site 10 : update variable 2 to version 3 with value 102
+
+ReadOnly Transaction 2 : Committed!
+
+Print the committed values of all copies of all variables at all sites, sorted per site.:
+
+
+Site 1
+Variable 2 with type replicated version 0 and value 20 and accessible True
+Variable 2 with type replicated version 3 and value 102 and accessible True
+Variable 4 with type replicated version 0 and value 40 and accessible True
+Variable 6 with type replicated version 0 and value 60 and accessible True
+Variable 8 with type replicated version 0 and value 80 and accessible True
+Variable 10 with type replicated version 0 and value 100 and accessible True
+Variable 12 with type replicated version 0 and value 120 and accessible True
+Variable 14 with type replicated version 0 and value 140 and accessible True
+Variable 16 with type replicated version 0 and value 160 and accessible True
+Variable 18 with type replicated version 0 and value 180 and accessible True
+Variable 20 with type replicated version 0 and value 200 and accessible True
+
+Site 2
+Variable 1 with type normal version 0 and value 10 and accessible True
+Variable 1 with type normal version 2 and value 101 and accessible True
+Variable 2 with type replicated version 0 and value 20 and accessible True
+Variable 2 with type replicated version 3 and value 102 and accessible True
+Variable 4 with type replicated version 0 and value 40 and accessible True
+Variable 6 with type replicated version 0 and value 60 and accessible True
+Variable 8 with type replicated version 0 and value 80 and accessible True
+Variable 10 with type replicated version 0 and value 100 and accessible True
+Variable 11 with type normal version 0 and value 110 and accessible True
+Variable 12 with type replicated version 0 and value 120 and accessible True
+Variable 14 with type replicated version 0 and value 140 and accessible True
+Variable 16 with type replicated version 0 and value 160 and accessible True
+Variable 18 with type replicated version 0 and value 180 and accessible True
+Variable 20 with type replicated version 0 and value 200 and accessible True
+
+Site 3
+Variable 2 with type replicated version 0 and value 20 and accessible True
+Variable 2 with type replicated version 3 and value 102 and accessible True
+Variable 4 with type replicated version 0 and value 40 and accessible True
+Variable 6 with type replicated version 0 and value 60 and accessible True
+Variable 8 with type replicated version 0 and value 80 and accessible True
+Variable 10 with type replicated version 0 and value 100 and accessible True
+Variable 12 with type replicated version 0 and value 120 and accessible True
+Variable 14 with type replicated version 0 and value 140 and accessible True
+Variable 16 with type replicated version 0 and value 160 and accessible True
+Variable 18 with type replicated version 0 and value 180 and accessible True
+Variable 20 with type replicated version 0 and value 200 and accessible True
+
+Site 4
+Variable 2 with type replicated version 0 and value 20 and accessible True
+Variable 2 with type replicated version 3 and value 102 and accessible True
+Variable 3 with type normal version 0 and value 30 and accessible True
+Variable 4 with type replicated version 0 and value 40 and accessible True
+Variable 6 with type replicated version 0 and value 60 and accessible True
+Variable 8 with type replicated version 0 and value 80 and accessible True
+Variable 10 with type replicated version 0 and value 100 and accessible True
+Variable 12 with type replicated version 0 and value 120 and accessible True
+Variable 13 with type normal version 0 and value 130 and accessible True
+Variable 14 with type replicated version 0 and value 140 and accessible True
+Variable 16 with type replicated version 0 and value 160 and accessible True
+Variable 18 with type replicated version 0 and value 180 and accessible True
+Variable 20 with type replicated version 0 and value 200 and accessible True
+
+Site 5
+Variable 2 with type replicated version 0 and value 20 and accessible True
+Variable 2 with type replicated version 3 and value 102 and accessible True
+Variable 4 with type replicated version 0 and value 40 and accessible True
+Variable 6 with type replicated version 0 and value 60 and accessible True
+Variable 8 with type replicated version 0 and value 80 and accessible True
+Variable 10 with type replicated version 0 and value 100 and accessible True
+Variable 12 with type replicated version 0 and value 120 and accessible True
+Variable 14 with type replicated version 0 and value 140 and accessible True
+Variable 16 with type replicated version 0 and value 160 and accessible True
+Variable 18 with type replicated version 0 and value 180 and accessible True
+Variable 20 with type replicated version 0 and value 200 and accessible True
+
+Site 6
+Variable 2 with type replicated version 0 and value 20 and accessible True
+Variable 2 with type replicated version 3 and value 102 and accessible True
+Variable 4 with type replicated version 0 and value 40 and accessible True
+Variable 5 with type normal version 0 and value 50 and accessible True
+Variable 6 with type replicated version 0 and value 60 and accessible True
+Variable 8 with type replicated version 0 and value 80 and accessible True
+Variable 10 with type replicated version 0 and value 100 and accessible True
+Variable 12 with type replicated version 0 and value 120 and accessible True
+Variable 14 with type replicated version 0 and value 140 and accessible True
+Variable 15 with type normal version 0 and value 150 and accessible True
+Variable 16 with type replicated version 0 and value 160 and accessible True
+Variable 18 with type replicated version 0 and value 180 and accessible True
+Variable 20 with type replicated version 0 and value 200 and accessible True
+
+Site 7
+Variable 2 with type replicated version 0 and value 20 and accessible True
+Variable 2 with type replicated version 3 and value 102 and accessible True
+Variable 4 with type replicated version 0 and value 40 and accessible True
+Variable 6 with type replicated version 0 and value 60 and accessible True
+Variable 8 with type replicated version 0 and value 80 and accessible True
+Variable 10 with type replicated version 0 and value 100 and accessible True
+Variable 12 with type replicated version 0 and value 120 and accessible True
+Variable 14 with type replicated version 0 and value 140 and accessible True
+Variable 16 with type replicated version 0 and value 160 and accessible True
+Variable 18 with type replicated version 0 and value 180 and accessible True
+Variable 20 with type replicated version 0 and value 200 and accessible True
+
+Site 8
+Variable 2 with type replicated version 0 and value 20 and accessible True
+Variable 2 with type replicated version 3 and value 102 and accessible True
+Variable 4 with type replicated version 0 and value 40 and accessible True
+Variable 6 with type replicated version 0 and value 60 and accessible True
+Variable 7 with type normal version 0 and value 70 and accessible True
+Variable 8 with type replicated version 0 and value 80 and accessible True
+Variable 10 with type replicated version 0 and value 100 and accessible True
+Variable 12 with type replicated version 0 and value 120 and accessible True
+Variable 14 with type replicated version 0 and value 140 and accessible True
+Variable 16 with type replicated version 0 and value 160 and accessible True
+Variable 17 with type normal version 0 and value 170 and accessible True
+Variable 18 with type replicated version 0 and value 180 and accessible True
+Variable 20 with type replicated version 0 and value 200 and accessible True
+
+Site 9
+Variable 2 with type replicated version 0 and value 20 and accessible True
+Variable 2 with type replicated version 3 and value 102 and accessible True
+Variable 4 with type replicated version 0 and value 40 and accessible True
+Variable 6 with type replicated version 0 and value 60 and accessible True
+Variable 8 with type replicated version 0 and value 80 and accessible True
+Variable 10 with type replicated version 0 and value 100 and accessible True
+Variable 12 with type replicated version 0 and value 120 and accessible True
+Variable 14 with type replicated version 0 and value 140 and accessible True
+Variable 16 with type replicated version 0 and value 160 and accessible True
+Variable 18 with type replicated version 0 and value 180 and accessible True
+Variable 20 with type replicated version 0 and value 200 and accessible True
+
+Site 10
+Variable 2 with type replicated version 0 and value 20 and accessible True
+Variable 2 with type replicated version 3 and value 102 and accessible True
+Variable 4 with type replicated version 0 and value 40 and accessible True
+Variable 6 with type replicated version 0 and value 60 and accessible True
+Variable 8 with type replicated version 0 and value 80 and accessible True
+Variable 9 with type normal version 0 and value 90 and accessible True
+Variable 10 with type replicated version 0 and value 100 and accessible True
+Variable 12 with type replicated version 0 and value 120 and accessible True
+Variable 14 with type replicated version 0 and value 140 and accessible True
+Variable 16 with type replicated version 0 and value 160 and accessible True
+Variable 18 with type replicated version 0 and value 180 and accessible True
+Variable 19 with type normal version 0 and value 190 and accessible True
+Variable 20 with type replicated version 0 and value 200 and accessible True
